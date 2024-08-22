@@ -22,7 +22,6 @@ export interface SelectionProps {
 }
 
 export class Selection {
-  // private core: Trajectoolkit;
   public type: SelectionType;
   public component: LensSVG | drawArea | MouseSelection;
   public match?: {

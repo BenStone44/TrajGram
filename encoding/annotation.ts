@@ -153,59 +153,6 @@ export class Annotation {
       );
     }
   }
-  // drawMarkers(
-  //   data: () => Trajectory[],
-  //   setting: AnnotationSettings,
-  //   core: Trajectoolkit,
-  //   id: string
-  // ) {
-  //   const parseData: Trajectorypoint[] = data().flatMap(
-  //     (trajectory: Trajectory) => this.getPositions(trajectory)
-  //   );
-
-  //   console.log('data', parseData, data());
-  //   const styles = setting.styles as MarkerStyle;
-  //   const map = core.map;
-  //   if (map) {
-  //     parseData.forEach((point) => {
-  //       const position = point['basePoint']['position'];
-  //       //const mapContainer = map.getCanvasContainer()
-  //       // const el = document.createElement('div');
-  //       // console.log('el', el);
-  //       // el.className = 'custom-marker';
-  //       // el.style.backgroundColor = styles.color; // 设置背景颜色
-  //       // el.style.opacity = '0.8'; // 设置透明度
-  //       const marker = new mapboxgl.Marker(
-  //         //el
-  //         //draggable: true
-  //         { color: styles.color }
-  //       )
-  //         .setLngLat([position.lng, position.lat])
-  //         .addTo(map);
-
-  //       marker.getElement().setAttribute('data-name', id);
-  //       this.markers.push(marker);
-  //     });
-  //     // console.log(
-  //     //   'marker',
-  //     //   core.markers[0].getElement()?.getAttribute('data-name')
-  //     // );
-  //   }
-  //   //console.log('draw');
-  // }
-  // clearMarkers(id: string, core: Trajectoolkit) {
-  //   //const map = core.map;
-  //   core.markers.forEach((marker) => {
-  //     marker.remove(marker);
-  //   });
-  //   d3.selectAll('.mapboxgl-marker')
-  //     .filter(function () {
-  //       return d3.select(this).attr('data-name') === id;
-  //     })
-  //     .remove();
-  //   console.log('remove');
-  //   //this.markers = [];
-  // }
   draw() {
     return;
   }

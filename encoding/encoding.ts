@@ -67,21 +67,6 @@ export class Encoding {
     this.mappingFunction.opacity = parseNumberString(styles.opacity || 1);
     this.mappingFunction.width = parseNumberString(styles.width || 5);
   }
-  // changeMappingFunction() {
-  //   const config = useConfigStore();
-  //   const scaleRange = config.scaleRange;
-  //   const colorRange = config.colorRange;
-  //   const colorInterpolator = d3
-  //     .scaleLinear()
-  //     .domain(scaleRange)
-  //     .range(colorRange)
-  //     .interpolate(d3.interpolateRgb);
-  //   this.mappingFunction.colorLinear = (T: Trajectory) => {
-  //     const attributeValue = T.distance as number;
-  //     const interpolatedColor = colorInterpolator(attributeValue);
-  //     return d3.rgb(interpolatedColor);
-  //   };
-  // }
 
   setStyleMappingFunction(type: string, func: { type: string; value: ColorFunction | NumricFunction}) {
     switch(type){

@@ -36,7 +36,6 @@ export const extractList = (str: string) => {
     const vs = str.substring(1, str.length - 1).split(',');
 
     const tryColor = vs.map((v) => parseColor(v.trim()));
-    // console.log('trycolor', tryColor);
     if (tryColor.every((v) => typeof v == 'string'))
       return { type: 'color', values: tryColor as string[] };
 
@@ -58,7 +57,6 @@ export const parseTAttribute = (str: string) => {
 
     return (T: Trajectory) => {
       if (T) {
-        // console.log('T', T);
         return T.attributes ? T.attributes[key] : undefined;
       } else throw new Error('NOT T');
     };
@@ -110,10 +108,6 @@ export const parseColor = (str: string) => {
 };
 
 export const parseGradientParameters = (str: string) => {
-  // "gradient($P.speed, [#b35a00, #d6d632])"
-  // "gradient($P.speed, [0, 30], [#b35a00, #d6d632])"
-  //"gradient($T.volume, [0, 30], [#b35a00, #d6d632])"
-  // 正则表达式用于去除 'gradient(' 开始和 ')' 结束
 
   const match = str.match(gradientRegex);
 
@@ -199,12 +193,8 @@ export const parseLinearParameters = (str: string) => {
   // "linear(speed($T), [#b35a00, #d6d632])"
   // "linear(speed($T), [0, 30], [#b35a00, #d6d632])"
 
-  // 正则表达式用于去除 'gradient(' 开始和 ')' 结束
-  // console.log('parseLinearParameters', str);
   const match = str.match(linearRegex);
-  // const configStore = useConfigStore();
 
-  // const volumeDistribute = configStore.getVolumeDistribute;
   const minValue = 0;
   const maxValue = 150;
   if (match) {
@@ -233,12 +223,11 @@ export const parseLinearParameters = (str: string) => {
       // speed($T), [#b35a00, #d6d632]
 
       const valuelist = extractList(args[1]);
-      // console.log('valuelist', valuelist);
       if (valuelist.type == 'color') {
-        // console.log('attributeFunc', attributeFunc(T));
+
 
         return (T: Trajectory) => {
-          // console.log('attributeFunc', attributeFunc(T));
+
           const colorInterpolator = d3.interpolateRgbBasis(
             valuelist.values as string[]
           );
@@ -248,31 +237,15 @@ export const parseLinearParameters = (str: string) => {
           return d3.rgb(colorInterpolator(normalizedValue));
         };
       } else {
-        let scaleRange = [0, 30];
-        if (volumeDistribute && volumeDistribute.length > 1) {
-          scaleRange = [minValue, maxValue];
-        }
-
-        // console.log('output', scaleRange, valuelist.values);
         return (T: Trajectory) => {
-          // console.log(
-          //   'numbber',
-          //   numberTransformScale(
-          //     attributeFunc(T) as number,
-          //     scaleRange,
-          //     valuelist.values as number[]
-          //   )
-          // );
-          // console.log('valuelist.values', valuelist.values);
           return numberTransformScale(
             attributeFunc(T) as number,
-            scaleRange,
+            [0, 30],
             valuelist.values as number[]
           );
         };
       }
     } else if (args.length == 3) {
-      // "linear(speed($T), [0, 30], [#b35a00, #d6d632])"
 
       const indexlist = extractList(args[1]);
       const valuelist = extractList(args[2]);

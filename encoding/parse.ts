@@ -3,7 +3,6 @@ import { Trajectoolkit } from '../Trajectoolkit';
 import type { Trajectory, Trajectorypoint } from '../interfaces/trajectory';
 import type { TrajectoryGroupProps } from '../render-manager/trajectory-group';
 import type { EncodingSettings, StyleMappingFunction } from './encoding';
-import type { colorArray } from '../utils/utils_color';
 import { getPointByDistanceR, getPointByTimeRatio } from '../utils/utils_point';
 // import { parseColorString } from '../data-management/parse';
 interface Vector {
@@ -45,12 +44,7 @@ export const positionParse = (
     return (T: Trajectory) => {
       return [0.5].map((r) => getPointByDistanceR(core, T, r, T.id + r));
     };
-  } else return (T: Trajectory) => []; // addDirection(T, 0, core),
-  // addDirection(T, 20, core),
-  // addDirection(T, 40, core),
-  // addDirection(T, 60, core),
-  // addDirection(T, 80, core),
-  // addDirection(T, T.shapingPoints.length - 1, core)];
+  } else return (T: Trajectory) => [];
 };
 export const addDirection = (
   T: Trajectory,

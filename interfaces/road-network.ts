@@ -1,5 +1,3 @@
-// import { LngLat } from 'mapbox-gl';
-// import { LngLat } from 'mapbox-gl';
 import type { Trajectorypoint } from './trajectory';
 export interface RoadNetworkAttributes {
   volume?: number;

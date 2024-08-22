@@ -48,6 +48,7 @@ export class Query {
       if (sepcification.operator === 'road') this.segmentationByRoadID();
       else if (sepcification.operator === 'evenD(5)') {
         this.queryResult = () => this.evenSplit('D', 5);
+        console.log(this.queryResult())
       } else if (sepcification.operator === 'evenT(5)') {
         this.queryResult = () => this.evenSplit('T', 5);
       }

@@ -1,7 +1,6 @@
 import { LngLat } from 'mapbox-gl';
 import { Trajectoolkit } from '../Trajectoolkit';
 import * as d3 from 'd3';
-import mapboxgl from 'mapbox-gl';
 export type MarkerInfo = {
   point: LngLat;
   color: string;
@@ -42,10 +41,8 @@ export class MarkerSVG {
   }
   public draw() {
     const scale = this.data.size;
-    //this.coordinates = this._calculateCoordinates();
     const x = this.coordinates.x;
     const y = this.coordinates.y;
-    //console.log('x', x, 'y', y);
     this.remove();
     this.g = d3.select(this.container).append('g');
     this.g
@@ -67,26 +64,6 @@ export class MarkerSVG {
       .attr('cx', 14)
       .attr('cy', 14)
       .attr('r', 7);
-    //console.log('color', this.data);
-    //   .attr('id', 'marker');
-    // const marker = document.querySelector('#marker');
-    // if (marker) {
-    //   const b = marker.getBoundingClientRect();
-    //   console.log('b', b);
-    //   const heng = b.width / 2 + b.x - x;
-    //   const shu = b.y - y + b.height;
-    //   console.log('heng', heng, 'shu', shu);
-    // }
-    // const map = this.core.map;
-    // if (map) {
-    //   const marker = new mapboxgl.Marker(
-    //     //el
-    //     //draggable: true
-    //     { color: this.data.color || '#000000' }
-    //   )
-    //     .setLngLat([this.center.lng, this.center.lat])
-    //     .addTo(map);
-    // }
   }
   public remove() {
     this.g.remove();

@@ -13,9 +13,7 @@ export const parseCondition = (
     const conditionFunctions: Array<(element: Trajectory) => boolean> = [];
     condition.map((perCondition) => {
       const selectionCondition = TKT.getSelectionByID(perCondition);
-
       const comp = selectionCondition?.component;
-
       if (selectionCondition && comp) {
         if (comp instanceof LensSVG) {
           selectionCondition.children.push(query);

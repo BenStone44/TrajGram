@@ -49,7 +49,8 @@ export const getPointByTime = (
     attributes: {
       source: {
         tid: trajectory.id
-      }
+      },
+      others: previous.attributes.others
     }
   } as Trajectorypoint;
 
@@ -144,7 +145,8 @@ export const getPointByTimeRatio = (
           TimeCalculate.differ(time, trajectory.starttime) /
           TimeCalculate.differ(trajectory.endtime, time),
         direction: direction
-      }
+      },
+      others: previous.attributes.others
     }
   } as Trajectorypoint;
 
@@ -308,7 +310,8 @@ export const getPointByDistanceR = (
           previous.attributes.computed.trajDP * (1 - ratio) +
           after.attributes.computed.trajDP * ratio,
         direction: direction
-      }
+      },
+      others: previous.attributes.others
     }
   } as Trajectorypoint;
 
@@ -346,7 +349,8 @@ export const getPointByDistanceR = (
             TimeCalculate.differ(time, trajectory.starttime) /
             TimeCalculate.differ(trajectory.endtime, trajectory.starttime),
           direction: direction
-        }
+        },
+        others: previous.attributes.others
       };
     }
   }
@@ -492,7 +496,8 @@ export function getPointBySegmentAndRatio(
         trajDP:
           previous.attributes.computed.trajDP * (1 - ratio) +
           after.attributes.computed.trajDP * ratio
-      }
+      },
+      others: previous.attributes.others
     }
   } as Trajectorypoint;
 
@@ -531,7 +536,8 @@ export function getPointBySegmentAndRatio(
           trajTP:
             TimeCalculate.differ(time, trajectory.starttime) /
             TimeCalculate.differ(trajectory.endtime, time)
-        }
+        },
+        others: previous.attributes.others
       };
     }
   }
@@ -598,7 +604,7 @@ export const generateSubTrajectory = (
   newShappingpoints = removeDuplicates(newShappingpoints);
 
   newShappingpoints = newShappingpoints.map((p) => {
-    const newp = _.cloneDeep(p);
+    let newp = _.cloneDeep(p);
     if (
       newp.attributes.computed?.trajDP != undefined &&
       startpoint.attributes.computed?.trajDP != undefined &&
