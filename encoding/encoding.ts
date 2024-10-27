@@ -1,5 +1,5 @@
 import { Trajectoolkit } from '../Trajectoolkit';
-import type { colorArray, RGB } from '../utils/utils_color';
+import type { colorArray } from '../utils/utils_color';
 import type { Trajectory, Trajectorypoint } from '../interfaces/trajectory';
 import { TrajectoryGroup } from '../render-manager/trajectory-group';
 import { Annotation, type AnnotationSettings } from './annotation';

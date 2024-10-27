@@ -129,6 +129,7 @@ export class LensSVG {
             return dis * 1000 < r;
           }
         }
+        break
       }
       case 'lens.end': {
         switch (elementType) {
@@ -160,6 +161,7 @@ export class LensSVG {
             return dis * 1000 < r;
           }
         }
+        break;
       }
       case 'lens.pass': {
         switch (elementType) {

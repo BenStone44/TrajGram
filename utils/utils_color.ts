@@ -1,5 +1,6 @@
 import * as d3 from 'd3';
 import { numberTransformScale } from './utils_scale';
+import { parseColor } from '../parseString/regex';
 
 export type colorArray = [number, number, number, number];
 export type RGB = { r: number; g: number; b: number };
@@ -18,7 +19,7 @@ export class ColorConverter {
       this.parseD3RGB(input.hex);
       this.a = input.opacity;
     } else if (typeof input === 'string') {
-      this.parseHexString(input);
+      this.parseHexString(parseColor(input) as string);
     } else if (Array.isArray(input) || input instanceof Uint8Array) {
       this.parseArray(input);
     } else {

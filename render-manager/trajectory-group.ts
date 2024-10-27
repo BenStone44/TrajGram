@@ -13,7 +13,7 @@ import {
 import type { Trajectory, Trajectorypoint } from '../interfaces/trajectory';
 import { ColorConverter, type ColorInput } from '../utils/utils_color';
 import { Trajectoolkit } from '../Trajectoolkit';
-import { getPixelLength } from '../utils/utils_scale';;
+import { getPixelLength } from '../utils/utils_scale';
 import type { StyleMappingFunction } from '../encoding/encoding';
 type CallbackFunction = () => void;
 

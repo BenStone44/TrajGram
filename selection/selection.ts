@@ -65,6 +65,13 @@ export class Selection {
           props.type as MouseEventType,
           core
         );
+        console.log(this.children)
+        newMouseEvent.setCallBack(() => {
+            this.children.forEach((child) => {
+              child.update();
+              core._refresh();
+            });
+          })
         this.component = newMouseEvent;
         break;
       }

@@ -34,28 +34,53 @@ export const parseCondition = (
     return [];
   }
 };
+
+
+const parseCompareCondition = (condition: string) => {
+  // 移除所有空格
+  condition = condition.replace(/\s+/g, '');
+  
+  // 使用正则表达式匹配
+  const match = condition.match(/([a-zA-Z]+\(\$[A-Z]\))([<>=]+)(\d+)/);
+  
+  if (!match) {
+    throw new Error(`Invalid condition format: ${condition}`);
+  }
+  
+  const [_, attribute, operator, threshold] = match;
+  
+  return {
+    attribute,
+    operator,
+    threshold: Number(threshold)
+  };
+};
+
+
+
 export const parseConditionTstring = (
   Tcondition: string,
   elementType: 'point' | 'trajectory'
 ): filterFunc => {
-  const [attribute, operator, threshold] = Tcondition.split(' ');
-  if (elementType == 'trajectory' && attribute == 'T.distance') {
+  console.log(Tcondition)
+  const {attribute, operator, threshold} = parseCompareCondition(Tcondition);
+  if (elementType == 'trajectory' && attribute == 'distance($T)') {
     switch (operator) {
       case '<':
         return (element: Trajectory) =>
-          (element as Trajectory).distance < parseFloat(threshold);
+          (element as Trajectory).distance < threshold;
       case '>':
         return (element: Trajectory) =>
-          (element as Trajectory).distance > parseFloat(threshold);
+          (element as Trajectory).distance > threshold;
       case '<=':
         return (element: Trajectory) =>
-          (element as Trajectory).distance <= parseFloat(threshold);
+          (element as Trajectory).distance <= threshold;
       case '>=':
         return (element: Trajectory) =>
-          (element as Trajectory).distance >= parseFloat(threshold);
+          (element as Trajectory).distance >= threshold;
       case '==':
         return (element: Trajectory) =>
-          (element as Trajectory).distance === parseFloat(threshold);
+          (element as Trajectory).distance === threshold;
       default:
         return (element: Trajectory) => false;
     }

@@ -26,6 +26,7 @@ import {
   TrajectoryTextGroup,
   type TrajectoryTextGroupProps
 } from './render-manager/trajectory-text-group';
+import type { MouseSelection } from './selection/mouse';
 /**
  * Implements Mapbox [IControl](https://docs.mapbox.com/mapbox-gl-js/api/markers/#icontrol) interface
  */
@@ -163,7 +164,7 @@ export class Trajectoolkit implements IControl {
     return (
       this.getDataByID(id)?.data ||
       this.getQueryByID(id)?.queryResult() ||
-      this.getSelectionByID(id)
+      (this.getSelectionByID(id)?.component as MouseSelection).MouseSelectionResult
     );
   }
 
