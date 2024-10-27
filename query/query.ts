@@ -6,7 +6,7 @@ import {
 import type { RoadNetworkItem } from '../interfaces/road-network';
 import type { Trajectory, Trajectorypoint } from '../interfaces/trajectory';
 import { type RelationTreeNode, Trajectoolkit } from '../Trajectoolkit';
-import { parseCondition } from './parse';
+import { parseCondition, parseOperator } from './parse';
 import * as turf from '@turf/turf';
 import {
   calculateDistance,
@@ -33,28 +33,33 @@ export class Query {
   callBack = new Map<string, () => any>();
   children: RelationTreeNode[] = [];
   core: Trajectoolkit;
-  constructor(sepcification: QuerySetting, core: Trajectoolkit) {
+  constructor(specification: QuerySetting, core: Trajectoolkit) {
     this.core = core;
-    this.id = sepcification.id;
+    this.id = specification.id;
     this.source = () =>
-      core.getDQSDatabyID(sepcification.source) as Trajectory[];
-    core.getDQSbyID(sepcification.source)?.children.push(this);
-    this.type = sepcification.type;
+      core.getDQSDatabyID(specification.source) as Trajectory[];
+    core.getDQSbyID(specification.source)?.children.push(this);
+    this.type = specification.type;
     //如果是filter，才会有condition
-    if (this.type == 'filter' && sepcification.condition) {
-      this.parseConditionToFunctions(sepcification.condition);
+    if (this.type === 'filter' && specification.condition) {
+      this.parseConditionToFunctions(specification.condition);
       this.updateMatch();
-    } else if (this.type == 'segmentation' && sepcification.operator) {
-      if (sepcification.operator === 'road') this.segmentationByRoadID();
-      else if (sepcification.operator === 'evenD(5)') {
-        this.queryResult = () => this.evenSplit('D', 5);
-        console.log(this.queryResult())
-      } else if (sepcification.operator === 'evenT(5)') {
-        this.queryResult = () => this.evenSplit('T', 5);
+    } 
+    else if (this.type === 'segmentation' && specification.operator) {
+      if (specification.operator === 'road') {
+        this.segmentationByRoadID();
+      } 
+      else {
+        const parsed = parseOperator(specification.operator);
+        if (parsed) {
+            this.queryResult = () => this.evenSplit(parsed.type, parsed.count);
+        }
       }
-    } else if (this.type == 'aggregation') {
+    } 
+    else if (this.type === 'aggregation') {
       this.aggregationByRoadID();
-    } else {
+    } 
+    else {
       console.log('other type');
     }
   }

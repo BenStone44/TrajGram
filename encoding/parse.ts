@@ -11,41 +11,137 @@ interface Vector {
 }
 
 
+interface ParseResult {
+  method: string;      // 'distance' 或 'time'
+  type: 'index' | 'ratio' | 'count';
+  values: number[];
+}
+
+const parseExpression = (expression: string): ParseResult | null => {
+  // 移除所有空格
+  expression = expression.replace(/\s+/g, '');
+  
+  const patterns = {
+    // 支持多个数字: [0,0.2,0.5] 或 [0] 这样的格式
+    index: /^\$T\.(distance|time)\[((?:\d*\.?\d+,?)+)\]$/,
+    count: /^\$T\.(distance|time)\(([0-9]+)\)$/,
+    variable: /^\$T\.(distance|time)\(\$([a-zA-Z][a-zA-Z0-9]*)\)$/
+  };
+
+  // 处理索引和比例列表
+  let match = expression.match(patterns.index);
+  if (match) {
+    const [_, method, valueStr] = match;
+    // 解析所有数值
+    const numbers = valueStr.split(',').map(Number);
+    
+    // 验证所有数值是否在有效范围内
+    const isValid = numbers.every(n => !isNaN(n) && n >= 0 && n <= 1);
+    if (!isValid) {
+      throw new Error(`Invalid values in expression: ${expression}. All values must be between 0 and 1.`);
+    }
+
+    // 如果只有一个值，且是0或1，按索引处理
+    if (numbers.length === 1) {
+      if (numbers[0] === 0 || numbers[0] === 1) {
+        return { method, type: 'index', values: numbers };
+      }
+    }
+    
+    return { method, type: 'ratio', values: numbers };
+  }
+
+  // 处理固定数量的点 (5)
+  match = expression.match(patterns.count);
+  if (match) {
+    const [_, method, count] = match;
+    const numCount = Number(count);
+    const values = Array.from(
+      { length: numCount }, 
+      (_, i) => i / (numCount - 1)
+    );
+    return { method, type: 'count', values };
+  }
+
+  // 处理变量数量的点 ($n)
+  match = expression.match(patterns.variable);
+  if (match) {
+    const [_, method, varName] = match;
+    return { 
+      method, 
+      type: 'count', 
+      values: varName 
+    };
+  }
+
+  return null;
+};
 
 export const positionParse = (
   expression: string,
   type: string,
-  core: Trajectoolkit
+  core: Trajectoolkit,
+  variables?: { [key: string]: number }
 ) => {
-  if (expression == '$T.distance[0]')
-    if (type == 'text') {
-      return (T: Trajectory) => [addDirection(T, 0, core)];
-    } else return (T: Trajectory) => [T.shapingPoints[0]];
-  else if (expression == '$T.distance[1]')
-    if (type == 'text') {
-      return (T: Trajectory) => [
-        addDirection(T, T.shapingPoints.length - 1, core)
-      ];
-    } else
+  const parsed = parseExpression(expression);
+  if (!parsed) return (T: Trajectory) => [];
+
+  const { method, type: parseType, values } = parsed;
+
+  // 处理单个索引类型 ([0] 或 [1])
+  if (parseType === 'index' && values.length === 1) {
+    if (values[0] === 0) {
+      if (type === 'text') {
+        return (T: Trajectory) => [addDirection(T, 0, core)];
+      }
+      return (T: Trajectory) => [T.shapingPoints[0]];
+    } else if (values[0] === 1) {
+      if (type === 'text') {
+        return (T: Trajectory) => [
+          addDirection(T, T.shapingPoints.length - 1, core)
+        ];
+      }
       return (T: Trajectory) => [T.shapingPoints[T.shapingPoints.length - 1]];
-  else if (expression == '$T.distance(5)') {
-    return (T: Trajectory) => {
-      return [0, 0.2, 0.4, 0.6, 0.8, 1].map((r) =>
-        getPointByDistanceR(core, T, r, T.id + r)
-      );
-    };
-  } else if (expression == '$T.time(5)') {
-    return (T: Trajectory) => {
-      return [0, 0.2, 0.4, 0.6, 0.8, 1].map((r) =>
-        getPointByTimeRatio(core, T, r, T.id + r)
-      );
-    };
-  } else if (expression == '$T.distance[0.5]') {
-    return (T: Trajectory) => {
-      return [0.5].map((r) => getPointByDistanceR(core, T, r, T.id + r));
-    };
-  } else return (T: Trajectory) => [];
+    }
+  }
+
+  // 生成点的函数
+  const generatePoints = (ratios: number[], T: Trajectory) => {
+    if (method === 'distance') {
+      return ratios.map(r => getPointByDistanceR(core, T, r, T.id + r));
+    } else if (method === 'time') {
+      return ratios.map(r => getPointByTimeRatio(core, T, r, T.id + r));
+    }
+    return [];
+  };
+
+  // 处理比例列表
+  if (parseType === 'ratio') {
+    return (T: Trajectory) => generatePoints(values, T);
+  }
+
+  // 处理数量类型（固定或变量）
+  if (parseType === 'count') {
+    if (typeof values === 'string' && variables) {
+      // 使用变量
+      return (T: Trajectory) => {
+        const count = variables[values];
+        if (!count) return [];
+        const ratios = Array.from(
+          { length: count }, 
+          (_, i) => i / (count - 1)
+        );
+        return generatePoints(ratios, T);
+      };
+    } else if (Array.isArray(values)) {
+      // 使用固定数量
+      return (T: Trajectory) => generatePoints(values, T);
+    }
+  }
+
+  return (T: Trajectory) => [];
 };
+
 export const addDirection = (
   T: Trajectory,
   index: number,

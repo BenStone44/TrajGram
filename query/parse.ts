@@ -57,6 +57,22 @@ const parseCompareCondition = (condition: string) => {
 };
 
 
+export const parseOperator = (operator: string) => {
+  // Only match evenD(number) or evenT(number)
+  const pattern = /^even([DT])\((\d+)\)$/;
+  const match = operator.match(pattern);
+  
+  if (match) {
+    const [_, type, value] = match;
+    return {
+      type,
+      count: parseInt(value)
+    };
+  }
+  return null;
+};
+
+
 
 export const parseConditionTstring = (
   Tcondition: string,
