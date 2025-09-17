@@ -369,8 +369,9 @@ export const findCircleLineIntersections = (
   const circle = turf.circle(
     point,
     getPixelLength(map, radius),
-    undefined,
-    'kilometers'
+    {
+        units: 'kilometers'
+    }
   );
 
   // 创建轨迹的线
@@ -400,7 +401,7 @@ export function findIntersections(
   const pathLineString = turf.lineString(path.map((p) => [p.lng, p.lat]));
   // 创建Turf Circle
   const p = turf.point([center.lng, center.lat]);
-  const circlePolygon = turf.circle(p, radius, undefined, 'kilometers');
+  const circlePolygon = turf.circle(p, radius, {units: 'kilometers'});
 
   // 使用Turf寻找交点
   const intersects = lineIntersect(pathLineString, circlePolygon);
@@ -429,12 +430,12 @@ export function findIntersections(
           const distanceToStart = turf.distance(
             turf.point([segment[0].lng, segment[0].lat]),
             intersect,
-            'kilometers'
+            { units: 'kilometers' }
           );
           const segmentLength = turf.distance(
             turf.point([segment[0].lng, segment[0].lat]),
             turf.point([segment[1].lng, segment[1].lat]),
-            'kilometers'
+            { units: 'kilometers' }
           );
           const ratio = distanceToStart / segmentLength;
           // 将交点信息添加到数组中

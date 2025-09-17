@@ -12,7 +12,7 @@ import {
   calculateDistance,
   calculateDurTime
 } from '../utils/utils_calculation';
-import { useConfigStore } from '../../store/config';
+// import { useConfigStore } from '../../store/config';
 export interface QuerySetting {
   id: string;
   source: string;
@@ -28,7 +28,7 @@ export class Query {
   id: string;
   source: () => Trajectory[];
   type: string;
-  match: (element: Trajectory) => boolean = (element: Trajectory) => false;
+  match: (element: Trajectory) => boolean = () => false;
   condition = new Map<string, filterFunc>();
   callBack = new Map<string, () => any>();
   children: RelationTreeNode[] = [];
@@ -191,7 +191,7 @@ export class Query {
   }
 
   public aggregationByRoadID() {
-    const configStore = useConfigStore();
+    // const configStore = useConfigStore();
     const data = this.source();
     const stageNewRoadnetwork: any[] = [];
     const formedNewRoadnetwork: RoadNetworkItem[] = [];
@@ -275,7 +275,7 @@ export class Query {
     // const maxValue = Math.max(...values);
     // const minValue = Math.min(...values);
     // console.log('maxValue', maxValue, 'minValue', minValue);
-    configStore.setVolumeDistribute(volumeDistribute);
+    // configStore.setVolumeDistribute(volumeDistribute);
     // configStore.setVolumeExtremum([minValue, maxValue]);
     // console.log(configStore);
     return formedNewRoadnetwork;
