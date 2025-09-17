@@ -604,7 +604,7 @@ export const generateSubTrajectory = (
   newShappingpoints = removeDuplicates(newShappingpoints);
 
   newShappingpoints = newShappingpoints.map((p) => {
-    let newp = _.cloneDeep(p);
+    const newp = _.cloneDeep(p);
     if (
       newp.attributes.computed?.trajDP != undefined &&
       startpoint.attributes.computed?.trajDP != undefined &&

@@ -4,31 +4,22 @@ import { speed, time } from '../utils/utils_calculation';
 
 import * as d3 from 'd3';
 import { numberTransformScale } from '../utils/utils_scale';
-// import { useConfigStore } from '../../store/config';
-
-// color
 
 // #ada123
 // #ADA123
 const color16 = /#([a-fA-F0-9]{6})$/;
-// const fullcolor16 = /#([a-fA-F0-9]{6})$/;
-
-// red, yellow, blue
 const colorname = /^[A-Za-z]+$/;
-
-// "gradient()"
-// "gradient()"
 const gradientRegex = /^gradient\((.*)\)$/;
 const linearRegex = /^linear\((.*)\)$/;
 
-// $P.speed
-const PRegex = /\$P\.[\w\.]*/;
-// $T.vehicle
-const TRegex = /\$T\.[\w\.]*/;
+// 匹配 $P.something 格式
+const PRegex = /^\$P\.[\w.]+/;
+// 匹配 $T.something 格式
+const TRegex = /^\$T\.[\w.]+/;
+
 // speed($T) distance($P)
 const magicRegex = /([a-zA-Z_]\w*)\(\$T\)/;
 
-// [,,,]
 const listRegex = /\[([^\]]*)\]/;
 
 export const extractList = (str: string) => {
@@ -46,6 +37,8 @@ export const extractList = (str: string) => {
 
   throw new Error('not a valid list!');
 };
+
+
 export const parseTAttribute = (str: string) => {
   if (str.match(magicRegex)) {
     if (str === 'speed($T)') return (T: Trajectory) => speed(T);
@@ -63,23 +56,7 @@ export const parseTAttribute = (str: string) => {
   } else throw new Error('attribute not valid!');
 };
 
-// export const parseTAttribute = (str: string) => {
-//   if (str.match(magicRegex)) {
-//     if (str === 'speed($T)') return (T: Trajectory) => speed(T);
-//     else if (str === 'distance($T)') return (T: Trajectory) => T.distance;
-//     else if (str === 'time($T)') return (T: Trajectory) => time(T);
-//     else throw new Error('magic function not yet suported!');
-//   } else if (str.match(TRegex)) {
-//     const key = str.substring(3);
-//     return (T: Trajectory) => {
-//       console.log('T', T);
-//       if (T) {
-//         console.log('T.attributes[key]', T.attributes[key]);
-//         return T.attributes ? T.attributes[key] : undefined;
-//       }
-//     };
-//   } else throw new Error('attribute not valid!');
-// };
+
 
 export const parsePAttribute = (str: string) => {
   if (str.match(PRegex)) {
@@ -102,7 +79,6 @@ export const parseColor = (str: string) => {
     const color = Color(str);
     return color.hex();
   } else if (str.match(color16)) {
-    // console.log(str.match(color16), str);
     return str;
   } else return null;
 };
@@ -185,13 +161,11 @@ export const parseGradientParameters = (str: string) => {
 
     return null;
   } else {
-    return null; // 如果不匹配，返回 null
+    return null;
   }
 };
 
 export const parseLinearParameters = (str: string) => {
-  // "linear(speed($T), [#b35a00, #d6d632])"
-  // "linear(speed($T), [0, 30], [#b35a00, #d6d632])"
 
   const match = str.match(linearRegex);
 
@@ -275,7 +249,7 @@ export const parseLinearParameters = (str: string) => {
 
     return null;
   } else {
-    return null; // 如果不匹配，返回 null
+    return null; 
   }
 };
 
@@ -291,7 +265,6 @@ export const parseColorString = (str: string): { type: string; value: any } => {
   if (tryParseLinearParameters) {
     return { type: 'linear', value: tryParseLinearParameters };
   }
-
   return { type: 'static', value: '#333333' };
 };
 

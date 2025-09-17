@@ -139,8 +139,6 @@ export class Annotation {
       );
     }
     if (this.type == 'markers') {
-      // this.clearMarkers(this.id, core);
-      // this.drawMarkers(this.source, setting, core, this.id);
       this.trajectorymarkerGroup = core.addMarkerGroup(
         parseMarkerStyle(this.id, setting, () =>
           this.source().flatMap((T) => this.getPositions(T))

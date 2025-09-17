@@ -4,25 +4,24 @@ import type { Trajectory, Trajectorypoint } from '../interfaces/trajectory';
 import type { TrajectoryGroupProps } from '../render-manager/trajectory-group';
 import type { EncodingSettings, StyleMappingFunction } from './encoding';
 import { getPointByDistanceR, getPointByTimeRatio } from '../utils/utils_point';
-// import { parseColorString } from '../data-management/parse';
+
+
 interface Vector {
   x: number;
   y: number;
 }
 
-
-interface ParseResult {
+interface PositionningParseResult {
   method: string;      // 'distance' 或 'time'
   type: 'index' | 'ratio' | 'count';
-  values: number[];
+  values: number[] | string;
 }
 
-const parseExpression = (expression: string): ParseResult | null => {
+const parsePositionExpression = (expression: string): PositionningParseResult | null => {
   // 移除所有空格
   expression = expression.replace(/\s+/g, '');
   
   const patterns = {
-    // 支持多个数字: [0,0.2,0.5] 或 [0] 这样的格式
     index: /^\$T\.(distance|time)\[((?:\d*\.?\d+,?)+)\]$/,
     count: /^\$T\.(distance|time)\(([0-9]+)\)$/,
     variable: /^\$T\.(distance|time)\(\$([a-zA-Z][a-zA-Z0-9]*)\)$/
@@ -31,7 +30,7 @@ const parseExpression = (expression: string): ParseResult | null => {
   // 处理索引和比例列表
   let match = expression.match(patterns.index);
   if (match) {
-    const [_, method, valueStr] = match;
+    const [, method, valueStr] = match;
     // 解析所有数值
     const numbers = valueStr.split(',').map(Number);
     
@@ -51,10 +50,10 @@ const parseExpression = (expression: string): ParseResult | null => {
     return { method, type: 'ratio', values: numbers };
   }
 
-  // 处理固定数量的点 (5)
+  // 处理固定数量的点
   match = expression.match(patterns.count);
   if (match) {
-    const [_, method, count] = match;
+    const [, method, count] = match;
     const numCount = Number(count);
     const values = Array.from(
       { length: numCount }, 
@@ -66,14 +65,13 @@ const parseExpression = (expression: string): ParseResult | null => {
   // 处理变量数量的点 ($n)
   match = expression.match(patterns.variable);
   if (match) {
-    const [_, method, varName] = match;
+    const [, method, varName] = match;
     return { 
       method, 
       type: 'count', 
-      values: varName 
+      values: varName
     };
   }
-
   return null;
 };
 
@@ -83,12 +81,13 @@ export const positionParse = (
   core: Trajectoolkit,
   variables?: { [key: string]: number }
 ) => {
-  const parsed = parseExpression(expression);
-  if (!parsed) return (T: Trajectory) => [];
+  const parsed = parsePositionExpression(expression);
+  if (!parsed) {
+    throw new Error('Failed to parse trajectory expression. Invalid format.');
+  }
 
   const { method, type: parseType, values } = parsed;
 
-  // 处理单个索引类型 ([0] 或 [1])
   if (parseType === 'index' && values.length === 1) {
     if (values[0] === 0) {
       if (type === 'text') {
@@ -117,7 +116,7 @@ export const positionParse = (
 
   // 处理比例列表
   if (parseType === 'ratio') {
-    return (T: Trajectory) => generatePoints(values, T);
+    return (T: Trajectory) => generatePoints(values as number[], T);
   }
 
   // 处理数量类型（固定或变量）
@@ -139,7 +138,8 @@ export const positionParse = (
     }
   }
 
-  return (T: Trajectory) => [];
+  throw new Error('Failed to parse trajectory expression. Invalid format.');
+
 };
 
 export const addDirection = (
@@ -173,7 +173,7 @@ export const addDirection = (
   } else {
     const prePoint = T.shapingPoints[index - 1];
     const nextPoint = T.shapingPoints[index + 1];
-    direction = calculatVectorWithThreePoint(
+    direction = calculatDirection3P(
       prePoint.basePoint.position,
       currentPoint.basePoint.position,
       nextPoint.basePoint.position,
@@ -184,7 +184,7 @@ export const addDirection = (
     return currentPoint;
   }
 };
-export const calculateCoordinates = (
+export const LngLat2Coordinates = (
   point: LngLat,
   core: Trajectoolkit
 ): Vector => {
@@ -195,13 +195,15 @@ export const calculateCoordinates = (
     y: rp.y
   };
 };
+
+
 export const computeUnitVector = (
   point1: LngLat,
   point2: LngLat,
   core: Trajectoolkit
 ): Vector => {
-  const p1 = calculateCoordinates(point1, core);
-  const p2 = calculateCoordinates(point2, core);
+  const p1 = LngLat2Coordinates(point1, core);
+  const p2 = LngLat2Coordinates(point2, core);
 
   const dx = p2.x - p1.x;
   const dy = p2.y - p1.y;
@@ -214,7 +216,7 @@ export const computeUnitVector = (
 
   return { x: dx / length, y: dy / length };
 };
-export const calculatVectorWithThreePoint = (
+export const calculatDirection3P = (
   A: LngLat,
   B: LngLat,
   C: LngLat,

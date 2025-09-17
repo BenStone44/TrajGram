@@ -7,7 +7,7 @@ import type { RoadNetworkItem } from '../interfaces/road-network';
 import type { Trajectory, Trajectorypoint } from '../interfaces/trajectory';
 import { type RelationTreeNode, Trajectoolkit } from '../Trajectoolkit';
 import { parseCondition, parseOperator } from './parse';
-import * as turf from '@turf/turf';
+// import * as turf from '@turf/turf';
 import {
   calculateDistance,
   calculateDurTime
@@ -16,7 +16,7 @@ import { useConfigStore } from '../../store/config';
 export interface QuerySetting {
   id: string;
   source: string;
-  type: 'filter' | 'crop' | 'segmentation' | 'aggregation';
+  type: 'filter' | 'segmentation' | 'aggregation';
   condition?: Array<string> | string;
   operator?: string;
   set?: any;
@@ -189,40 +189,7 @@ export class Query {
     });
     return trawithSameID;
   }
-  // public calculateDistance(points: Trajectorypoint[]): number {
-  //   let totalDistance = 0;
-  //   let prePoint = turf.point([
-  //     points[0].basePoint.position.lng,
-  //     points[0].basePoint.position.lat
-  //   ]);
-  //   points.forEach((point: Trajectorypoint) => {
-  //     const currentPoint = turf.point([
-  //       point.basePoint.position.lng,
-  //       point.basePoint.position.lat
-  //     ]);
-  //     const dis = turf.distance(prePoint, currentPoint, 'kilometers');
-  //     totalDistance += dis;
-  //     prePoint = currentPoint;
-  //   });
-  //   return totalDistance;
-  // }
-  // public calculateDurTime(starttime: string, endtime: string): number {
-  //   const startDate = new Date(starttime);
-  //   const endDate = new Date(endtime);
 
-  //   if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
-  //     throw new Error('Invalid date strings');
-  //   }
-
-  //   const timeDifferenceInMilliseconds =
-  //     endDate.getTime() - startDate.getTime();
-
-  //   const timeDifferenceInSeconds = Math.round(
-  //     timeDifferenceInMilliseconds / 1000
-  //   );
-
-  //   return timeDifferenceInSeconds;
-  // }
   public aggregationByRoadID() {
     const configStore = useConfigStore();
     const data = this.source();
@@ -231,7 +198,6 @@ export class Query {
     const roadnetworkData = this.core.getDQSDatabyID(
       'roadnetwork'
     ) as RoadNetworkItem[];
-    // console.log('roadnetworkData', roadnetworkData, data[0]);
     data.forEach((pertra: Trajectory) => {
       const attributes = pertra.attributes;
       if (attributes) {

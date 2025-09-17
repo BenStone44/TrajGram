@@ -68,12 +68,8 @@ export class TrajectoryPointElement {
     defaultTrajectoryPointRenderStyle.fill;
   public stroke: (value?: colorArray) => colorArray = () =>
     defaultTrajectoryPointRenderStyle.stroke;
-  //   public fillOpacity: (value?: number) => number = () =>
-  //     defaultCircleStyle.fillOpacity;
   public strokeWidth: (value?: number) => number = () =>
     defaultTrajectoryPointRenderStyle.strokeWidth;
-  //   public strokeOpacity: (value?: number) => number = () =>
-  //     defaultCircleStyle.strokeOpacity;
   public r: (value?: number) => number = () =>
     defaultTrajectoryPointRenderStyle.r;
 
@@ -102,12 +98,9 @@ export class TrajectoryPointElement {
     this.style.stroke = stroke || defaultTrajectoryPointRenderStyle.stroke;
     this.style.strokeWidth =
       strokeWidth || defaultTrajectoryPointRenderStyle.strokeWidth;
-    // this.style.strokeOpacity =
-    //   strokeOpacity || defaultCircleStyle.strokeOpacity;
     this.style.r = r || defaultTrajectoryPointRenderStyle.r;
     this.center = source.basePoint.position;
 
-    // getter setter of style
     Object.keys(this.style).forEach((key) => {
       (this as any)[key] = this.generateElementStyleGetterSetter(key);
     });
@@ -165,18 +158,6 @@ export class TrajectoryPointElement {
         bufferType = 'r';
         startIndex = this.startBufferIndex;
         break;
-      //   case 'strokeOpacity':
-      //     bufferType = 'strokeOpacity';
-      //     startIndex = this.startBufferIndex * floatNumof[bufferType];
-      //     break;
-      //   case 'strokeWidth':
-      //     bufferType = 'strokeWidth';
-      //     startIndex = this.startBufferIndex * floatNumof[bufferType];
-      //     break;
-      //   case 'stroke':
-      //     bufferType = 'color';
-      //     startIndex = this.startBufferIndex * floatNumof[bufferType];
-      // break;
       case 'color':
         bufferType = 'color';
         startIndex = this.startBufferIndex * 4;
@@ -185,14 +166,7 @@ export class TrajectoryPointElement {
         bufferType = 'vertices';
         startIndex = this.startBufferIndex * 2;
         break;
-      //   case 'fillOpacity':
-      //     bufferType = 'fillOpacity';
-      //     startIndex = this.startBufferIndex * floatNumof[bufferType];
-      //     break;
-
       default:
-        // bufferLength = this.bufferLength;
-        // startIndex = this.startBufferIndex;
         bufferType = 'r';
         break;
     }

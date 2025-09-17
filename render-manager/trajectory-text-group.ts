@@ -144,30 +144,7 @@ export class TrajectoryTextGroup {
       this.elementDict[newid] = trajectoryTextElement;
     });
   }
-  //   calculateCoordinates(point: LngLat): Vector {
-  //     const rp = this._map.project(point);
-  //     return {
-  //       x: rp.x,
-  //       y: rp.y
-  //     };
-  //   }
-  //   computeUnitVector(point1: LngLat, point2: LngLat): Vector {
-  //     const p1 = this.calculateCoordinates(point1);
-  //     const p2 = this.calculateCoordinates(point2);
-  //     const dx = p2.x - p1.x;
-  //     const dy = p2.y - p1.y;
-  //     const length = Math.sqrt(dx * dx + dy * dy);
 
-  //     if (length === 0) {
-  //       throw new Error('Cannot compute unit vector for zero length');
-  //     }
-
-  //     return { x: dx / length, y: dy / length };
-  //   }
-
-  //   computeVectorDifference(vector1: Vector, vector2: Vector): Vector {
-  //     return { x: vector2.x - vector1.x, y: vector2.y - vector1.y };
-  //   }
 
   computeAngleWithVector(vector: Vector): number {
     const horizontalVector = { x: 1, y: 0 };

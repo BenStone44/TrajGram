@@ -142,15 +142,7 @@ export class ColorConverter {
     }
   }
 
-  // static numberTransformScale(
-  //   number: number,
-  //   originRange: number[],
-  //   finalRange: number[]
-  // ): number {
-  //   const scale = d3.scaleLinear().domain(originRange).range(finalRange);
-  //   const result: number = scale(number);
-  //   return result;
-  // }
+ 
   private parseArray(arr: number[] | Uint8Array): void {
     if (arr.length !== 3 && arr.length !== 4) {
       throw new Error('Array must have three or four elements');

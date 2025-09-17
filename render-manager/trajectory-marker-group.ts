@@ -37,10 +37,7 @@ export class TrajectoryMarkerGroup {
     this.props = props;
 
     this._createMarkerElements(props.data());
-    //console.log('this.elementDict', this.elementDict);
     Object.values(this.elementDict).forEach((element) => {
-      // Perform operations with each element in elementDict
-      //console.log(`Element ID: ${element.id}, Center: ${element.center}`);
       const markerSVG = new MarkerSVG(this.core, {
         point: element.center,
         color: element.color,
@@ -48,7 +45,6 @@ export class TrajectoryMarkerGroup {
         size: element.size
       });
       this.markerInstances.push(markerSVG);
-      //console.log('element.color', element.color);
     });
   }
   private _createMarkerElements(data: Trajectorypoint[]) {

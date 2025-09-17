@@ -3,6 +3,7 @@ import type { Trajectory, Trajectorypoint } from '../interfaces/trajectory';
 import { LensSVG } from '../selection/lens_svg';
 import { Query, type filterFunc } from './query';
 
+
 export const parseCondition = (
   condition: Array<string> | string,
   query: Query,
@@ -47,7 +48,7 @@ const parseCompareCondition = (condition: string) => {
     throw new Error(`Invalid condition format: ${condition}`);
   }
   
-  const [_, attribute, operator, threshold] = match;
+  const [, attribute, operator, threshold] = match;
   
   return {
     attribute,
@@ -63,7 +64,7 @@ export const parseOperator = (operator: string) => {
   const match = operator.match(pattern);
   
   if (match) {
-    const [_, type, value] = match;
+    const [, type, value] = match;
     return {
       type,
       count: parseInt(value)
@@ -98,7 +99,7 @@ export const parseConditionTstring = (
         return (element: Trajectory) =>
           (element as Trajectory).distance === threshold;
       default:
-        return (element: Trajectory) => false;
+        throw new Error('Invalid parseConditionTstring!');
     }
   }
   //else return (element: Trajectory) => false;
@@ -119,8 +120,11 @@ export const parseConditionTstring = (
           queryTimeArray(element, Tcondition) as boolean;
     }
   }
-  else return (element: Trajectory) => false;
+  else throw new Error('Invalid parseConditionTstring!');
 };
+
+
+
 export const queryDayArray = (
   element: Trajectory,
   startDay: number,
@@ -138,6 +142,9 @@ export const queryDayArray = (
     return false;
   }
 };
+
+
+
 export const queryHourArray = (
   element: Trajectory,
   startHour: number,
@@ -151,6 +158,9 @@ export const queryHourArray = (
     return false;
   }
 };
+
+
+
 export const queryTimeArray = (
   element: Trajectory,
   Tcondition: string
@@ -166,6 +176,9 @@ export const queryTimeArray = (
     return false;
   }
 };
+
+
+
 export const parseTimeString = (
   timeStr: string
 ): { year: number; month: number; day: number; hour: number } => {
