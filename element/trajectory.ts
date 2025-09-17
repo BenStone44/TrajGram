@@ -6,7 +6,7 @@ import type {
   Trajectorypoint
 } from '../interfaces/trajectory';
 import * as turf from '@turf/turf';
-import type { Feature } from 'geojson';
+import type { Feature, LineString } from 'geojson';
 
 import type { CircleRenderStyle } from './trajectorypoint';
 import type { GeoElement } from '../interfaces/geo';
@@ -64,7 +64,7 @@ export class TrajectoryElement {
   public groupClass: TrajectoryGroup;
   public startPoint: Trajectorypoint;
   public endPoint: Trajectorypoint;
-  public feature: Feature;
+  public feature: Feature<LineString>;
   public offColor: [number, number, number, number];
   public selectedPoints: Trajectorypoint[] = [];
   private color: Array<number> = [];
@@ -191,7 +191,7 @@ export class TrajectoryElement {
         element.shape.center.lat
       ]);
 
-      const dis = turf.distance(point, startpoint, 'kilometers');
+      const dis = turf.distance(point, startpoint, { units: 'kilometers' });
       return dis * 1000 < element.shape.r;
     } else {
       return turf.booleanPointInPolygon(startpoint, element.shape) as boolean;
@@ -209,7 +209,7 @@ export class TrajectoryElement {
         element.shape.center.lat
       ]);
 
-      const dis = turf.distance(point, endpoint, 'kilometers');
+      const dis = turf.distance(point, endpoint, { units: 'kilometers' });
       return dis * 1000 < element.shape.r;
     } else {
       return turf.booleanPointInPolygon(endpoint, element.shape) as boolean;

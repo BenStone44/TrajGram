@@ -112,7 +112,7 @@ export class LensSVG {
               p.basePoint.position.lat
             ]);
 
-            const dis = turf.distance(lensCenter, startpoint, 'kilometers');
+            const dis = turf.distance(lensCenter, startpoint, { units: 'kilometers' });
 
             return dis * 1000 < r;
           }
@@ -125,7 +125,7 @@ export class LensSVG {
               p.basePoint.position.lat
             ]);
             //console.log('startpoint', startpoint);
-            const dis = turf.distance(lensCenter, startpoint, 'kilometers');
+            const dis = turf.distance(lensCenter, startpoint, { units: 'kilometers' });
             return dis * 1000 < r;
           }
         }
@@ -142,7 +142,7 @@ export class LensSVG {
               p.basePoint.position.lat
             ]);
 
-            const dis = turf.distance(lensCenter, startpoint, 'kilometers');
+            const dis = turf.distance(lensCenter, startpoint, { units: 'kilometers' });
             return dis * 1000 < r;
           }
           case 'trajectory': {
@@ -157,7 +157,7 @@ export class LensSVG {
               p.basePoint.position.lat
             ]);
 
-            const dis = turf.distance(lensCenter, startpoint, 'kilometers');
+            const dis = turf.distance(lensCenter, startpoint, { units: 'kilometers' });
             return dis * 1000 < r;
           }
         }
@@ -174,7 +174,7 @@ export class LensSVG {
               p.basePoint.position.lat
             ]);
 
-            const dis = turf.distance(lensCenter, startpoint, 'kilometers');
+            const dis = turf.distance(lensCenter, startpoint, { units: 'kilometers' });
             return dis * 1000 < r;
           }
           case 'trajectory': {
@@ -204,7 +204,7 @@ export class LensSVG {
 
     this._map.off(
       'mousemove',
-      (e: mapboxgl.MapMouseEvent & mapboxgl.EventData) => this.pick(e.point)
+      (e: mapboxgl.MapMouseEvent) => this.pick(e.point)
     );
 
     this.g.selectAll('*').remove();
@@ -233,7 +233,7 @@ export class LensSVG {
 
     this._map.on(
       'mousemove',
-      (e: mapboxgl.MapMouseEvent & mapboxgl.EventData) => this.pick(e.point)
+      (e: mapboxgl.MapMouseEvent) => this.pick(e.point)
     );
   }
 

@@ -48,7 +48,7 @@ export type Trajectory = {
   annotationPoints?: { [key: string]: AnnotationPoint[] };
   annotationSubTrajectories?: { [key: string]: AnnotationSubtrajectory[][] };
   segmentInstanceIdList?: segmentInstance[];
-  attributes?: { [key: string]: any }; //TrajectoryAttributes;
+  attributes?: { [key: string]: any };
 }
 
 export type segmentInstance = {

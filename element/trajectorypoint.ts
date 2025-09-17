@@ -136,7 +136,7 @@ export class TrajectoryPointElement {
         element.shape.center.lat
       ]);
 
-      const dis = turf.distance(point, startpoint, 'kilometers');
+      const dis = turf.distance(point, startpoint, { units: 'kilometers' });
       return dis * 1000 < element.shape.r;
     } else {
       // return turf.booleanPointInPolygon(startpoint, element.shape);

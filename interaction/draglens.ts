@@ -1,7 +1,7 @@
 // 导入 Mapbox 类型定义
 import mapboxgl from 'mapbox-gl';
 import { LensSVG } from '../selection/lens_svg';
-import { MarkerSVG } from '../selection/marker';
+// import { MarkerSVG } from '../selection/marker';
 
 // 定义回调函数类型
 type CallbackFunction = () => void;
@@ -11,7 +11,7 @@ export class DragLensAction {
   private map: mapboxgl.Map;
   private isDragging: boolean;
   private startPoint: mapboxgl.Point | null;
-  private element: LensSVG | null | MarkerSVG = null;
+  private element: LensSVG | null = null;
   private onMouseDownCallback: Array<CallbackFunction> = [];
   private onMouseMoveCallback: Array<CallbackFunction> = [];
   private onMouseUpCallback: Array<CallbackFunction> = [];
@@ -40,7 +40,7 @@ export class DragLensAction {
     this.onMouseUpCallback.push(callback);
   }
   // mousedown 事件的处理函数启动拖拽
-  private onMouseDown(event: mapboxgl.MapMouseEvent & mapboxgl.EventData) {
+  private onMouseDown(event: mapboxgl.MapMouseEvent) {
     this.map.dragPan.disable();
     this.startPoint = event.point;
     this.isDragging = true;
@@ -48,7 +48,7 @@ export class DragLensAction {
   }
 
   // mousemove 事件的处理函数捕获拖拽
-  private onMouseMove(event: mapboxgl.MapMouseEvent & mapboxgl.EventData) {
+  private onMouseMove(event: mapboxgl.MapMouseEvent) {
     if (!this.isDragging || !this.startPoint) return;
     const currentPoint = event.point;
     const deltax = currentPoint.x - this.startPoint.x,
@@ -70,7 +70,7 @@ export class DragLensAction {
   }
 
   // mouseup 事件的处理函数结束拖拽
-  private onMouseUp(event: mapboxgl.MapMouseEvent & mapboxgl.EventData) {
+  private onMouseUp(event: mapboxgl.MapMouseEvent) {
     if (!this.isDragging) return;
 
     if (this.element && this.startPoint) {

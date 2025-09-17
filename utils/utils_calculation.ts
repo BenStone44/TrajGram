@@ -38,7 +38,7 @@ export const calculateDistance = (points: Trajectorypoint[]) => {
       point.basePoint.position.lng,
       point.basePoint.position.lat
     ]);
-    const dis = turf.distance(prePoint, currentPoint, 'kilometers');
+    const dis = turf.distance(prePoint, currentPoint, { units: 'kilometers' });
     totalDistance += dis;
     prePoint = currentPoint;
   });
