@@ -16,7 +16,7 @@ import {
 } from './render-manager/trajectory-point-group';
 import { Query, type QuerySetting } from './query/query';
 import { Selection, type SelectionProps } from './selection/selection';
-import { Data, type DataProps } from './data-management/data';
+import { Data, type DataProps, type DataSetting } from './data-management/data';
 import { Encoding, type EncodingSettings } from './encoding/encoding';
 import {
   TrajectoryMarkerGroup,
@@ -135,13 +135,6 @@ export class Trajectoolkit implements IControl {
 
   public getEncoding(id: string) {
     const encoding_id = 'e_' + id;
-    // console.log(
-    //   'encoding_id',
-    //   encoding_id,
-    //   this._encodings,
-    //   this._encodings.get('e_road_heatmap')
-    // );
-    // console.log('keys', Object.keys(this._encodings));
     return this._encodings.get(encoding_id);
   }
 
@@ -466,10 +459,7 @@ export class Trajectoolkit implements IControl {
   private _onRemoveOverlaid(map: MapboxMap): void {
     map.off('resize', this._updateContainerSize);
     map.off('zoom', this._refresh);
-
     map.off('drag', this._refresh);
-    // map.off('dragend', this._refresh);
-
     map.off('dragend', function () {
       map.stop();
     });
@@ -546,4 +536,63 @@ export class Trajectoolkit implements IControl {
         throw new Error('wrong id!');
     }
   }
+
+  public jsonParser = (jsonFile: any) => {
+    if (this.map) {
+      const dss: DataSetting[] = jsonFile.data;
+      const fetchPromises = dss.map((ds) =>
+        {
+          if(ds.id=="Q3-backend"){
+
+            return fetch('http://127.0.0.1:8000/items/', {
+                  method: 'POST',
+                  headers: {
+                      'Content-Type': 'application/json'
+                  },
+                  body: JSON.stringify({
+                      week: [0, 7],
+                      hour: [0, 24],
+                      distance: [0, 1000000]
+                  })
+              }).then((response) => response.json())
+          }
+          else
+            return fetch(ds.url).then((response) => response.json())
+        }
+      );
+      Promise.all(fetchPromises)
+        .then((results) => {
+          const dataprops = results.map((result, i) => {
+            return {
+              id: dss[i].id,
+              type: dss[i].type,
+              data: result
+            };
+          });
+
+          dataprops.forEach((dataprop) => this.addDataByProps(dataprop));
+
+          if (jsonFile.selections) {
+            const selectKeys = Object.keys(jsonFile.selections);
+            selectKeys.forEach((selectKey: string) => {
+              const selectItem = jsonFile.selections[selectKey];
+              this.addSelectionByJson({ id: selectKey, type: selectItem });
+            });
+          }
+
+          jsonFile.queries?.forEach((queryItem: QuerySetting) => {
+            this.addQueryByJson(queryItem);
+          });
+
+          jsonFile.encodings?.forEach((encodingItem: EncodingSettings) => {
+            this.addEncodingByJson(encodingItem);
+          });
+        })
+        .catch((error) => {
+          // 如果任一请求失败，Promise.all 的 catch 将捕获到异常
+          console.error('请求失败:', error);
+        });
+    }
+  };
+
 }
