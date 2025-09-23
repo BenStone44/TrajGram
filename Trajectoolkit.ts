@@ -540,26 +540,7 @@ export class Trajectoolkit implements IControl {
   public jsonParser = (jsonFile: any) => {
     if (this.map) {
       const dss: DataSetting[] = jsonFile.data;
-      const fetchPromises = dss.map((ds) =>
-        {
-          if(ds.id=="Q3-backend"){
-
-            return fetch('http://127.0.0.1:8000/items/', {
-                  method: 'POST',
-                  headers: {
-                      'Content-Type': 'application/json'
-                  },
-                  body: JSON.stringify({
-                      week: [0, 7],
-                      hour: [0, 24],
-                      distance: [0, 1000000]
-                  })
-              }).then((response) => response.json())
-          }
-          else
-            return fetch(ds.url).then((response) => response.json())
-        }
-      );
+      const fetchPromises = dss.map((ds) => fetch(ds.url).then((response) => response.json()));
       Promise.all(fetchPromises)
         .then((results) => {
           const dataprops = results.map((result, i) => {

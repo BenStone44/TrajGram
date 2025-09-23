@@ -1,6 +1,6 @@
-import mapboxgl, { LngLat } from 'mapbox-gl';
+import { LngLat } from 'mapbox-gl';
 import * as d3 from 'd3';
-import { DragLensAction } from '../interaction/draglens';
+import { DragLensAction } from './draglens';
 import { getPixelLength } from '../utils/utils_scale';
 import type { GeoElement } from '../interfaces/geo';
 import * as turf from '@turf/turf';

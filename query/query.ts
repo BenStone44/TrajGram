@@ -7,12 +7,12 @@ import type { RoadNetworkItem } from '../interfaces/road-network';
 import type { Trajectory, Trajectorypoint } from '../interfaces/trajectory';
 import { type RelationTreeNode, Trajectoolkit } from '../Trajectoolkit';
 import { parseCondition, parseOperator } from './parse';
-// import * as turf from '@turf/turf';
 import {
   calculateDistance,
   calculateDurTime
 } from '../utils/utils_calculation';
-// import { useConfigStore } from '../../store/config';
+
+
 export interface QuerySetting {
   id: string;
   source: string;
@@ -245,10 +245,7 @@ export class Query {
             value: 1
           });
         }
-        //用轨迹的总距离
-        // const speed = perItem.attributes.distance / perItem.attributes.durtime;
         const findItem = roadnetworkData.find((obj) => obj.id === perItem.id);
-        //console.log('findItem', findItem);
         if (findItem) {
           //用路段的距离*volume
           const speed =
@@ -271,13 +268,6 @@ export class Query {
     }
     volumeDistribute.sort((a, b) => a.volume - b.volume);
     console.log('volumeDistribute', volumeDistribute);
-    // const values = volumeDistribute.map((obj) => obj.value);
-    // const maxValue = Math.max(...values);
-    // const minValue = Math.min(...values);
-    // console.log('maxValue', maxValue, 'minValue', minValue);
-    // configStore.setVolumeDistribute(volumeDistribute);
-    // configStore.setVolumeExtremum([minValue, maxValue]);
-    // console.log(configStore);
     return formedNewRoadnetwork;
   }
 
@@ -295,7 +285,6 @@ export class Query {
     } else {
       console.log('other type');
     }
-    // console.log(filterResult);
     return filterResult;
   }
 

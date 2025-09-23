@@ -1,6 +1,6 @@
 // 导入 Mapbox 类型定义
 import mapboxgl from 'mapbox-gl';
-import { LensSVG } from '../selection/lens_svg';
+import { LensSVG } from './lens_svg';
 // import { MarkerSVG } from '../selection/marker';
 
 // 定义回调函数类型

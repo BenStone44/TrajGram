@@ -1,5 +1,5 @@
 import { type RelationTreeNode, Trajectoolkit } from '../Trajectoolkit';
-import { parseLensInfo } from '../data-management/parse';
+import { parseLensInfo } from './parse';
 import { TrajectoryElement } from '../element/trajectory';
 import { TrajectoryPointElement } from '../element/trajectorypoint';
 import { drawArea } from './area';
@@ -18,6 +18,7 @@ export interface SelectionProps {
   id: string;
   type: SelectionType;
   predicate?: string;
+  trigger?: string;
   style?: any;
 }
 
@@ -65,7 +66,6 @@ export class Selection {
           props.type as MouseEventType,
           core
         );
-        console.log(this.children)
         newMouseEvent.setCallBack(() => {
             this.children.forEach((child) => {
               child.update();

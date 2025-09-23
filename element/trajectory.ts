@@ -216,24 +216,24 @@ export class TrajectoryElement {
     }
   }
 
-  public addPoint(point: Trajectorypoint) {
-    return point;
-  }
+  // public addPoint(point: Trajectorypoint) {
+  //   return point;
+  // }
 
-  public addMarker(point: Trajectorypoint) {
-    return point;
-  }
+  // public addMarker(point: Trajectorypoint) {
+  //   return point;
+  // }
 
-  public addShape() {
-    return 0;
-  }
+  // public addShape() {
+  //   return 0;
+  // }
 
-  public addSubtrajectoryPoint(
-    startpoint: Trajectorypoint,
-    endpoint: Trajectorypoint,
-    style: trajectoryStyle
-  ) {
-    console.log(startpoint, endpoint, style);
-    return {} as Trajectory;
-  }
+  // public addSubtrajectoryPoint(
+  //   startpoint: Trajectorypoint,
+  //   endpoint: Trajectorypoint,
+  //   style: trajectoryStyle
+  // ) {
+  //   console.log(startpoint, endpoint, style);
+  //   return {} as Trajectory;
+  // }
 }
