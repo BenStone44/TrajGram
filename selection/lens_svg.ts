@@ -153,12 +153,12 @@ export class LensSVG {
                 .shapingPoints;
               p = shapePointArray[shapePointArray.length - 1];
             }
-            const startpoint = turf.point([
+            const endpoint = turf.point([
               p.basePoint.position.lng,
               p.basePoint.position.lat
             ]);
 
-            const dis = turf.distance(lensCenter, startpoint, { units: 'kilometers' });
+            const dis = turf.distance(lensCenter, endpoint, { units: 'kilometers' });
             return dis * 1000 < r;
           }
         }
