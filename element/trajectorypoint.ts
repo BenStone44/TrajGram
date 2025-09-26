@@ -138,8 +138,10 @@ export class TrajectoryPointElement {
 
       const dis = turf.distance(point, startpoint, { units: 'kilometers' });
       return dis * 1000 < element.shape.r;
+    } else if (element.type == 'polygon') {
+      return turf.booleanPointInPolygon(startpoint, element.shape);
     } else {
-      // return turf.booleanPointInPolygon(startpoint, element.shape);
+      return false
     }
   }
   public getColor() {

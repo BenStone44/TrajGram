@@ -1,5 +1,5 @@
 import { LngLat } from 'mapbox-gl';
-import type { Feature, Polygon } from 'geojson';
+import type { Feature, Point, Polygon } from 'geojson';
 
 export interface GeoCircleElement {
   id: string;
@@ -7,10 +7,16 @@ export interface GeoCircleElement {
   shape: { center: LngLat; r: number };
 }
 
-interface NormalElement {
+export interface GeoPolygon {
   id: string;
-  type: 'normal';
+  type: 'polygon';
   shape: Feature<Polygon>;
 }
 
-export type GeoElement = GeoCircleElement | NormalElement;
+export interface GeoPoint {
+  id: string;
+  type: 'point';
+  shape: Feature<Point>
+}
+
+export type GeoElement = GeoCircleElement | GeoPolygon;
