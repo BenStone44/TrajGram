@@ -80,6 +80,7 @@ export class LensSVG {
       shape: { center: this.center, r: this.data.style.r || defalutLensStyle.r }
     } as GeoElement;
   }
+  
   public setCoordinates(c: { x: number; y: number; r?: number }) {
     this.coordinates.x = c.x;
     this.coordinates.y = c.y;
@@ -124,7 +125,7 @@ export class LensSVG {
               p.basePoint.position.lng,
               p.basePoint.position.lat
             ]);
-            //console.log('startpoint', startpoint);
+            
             const dis = turf.distance(lensCenter, startpoint, { units: 'kilometers' });
             return dis * 1000 < r;
           }
