@@ -81,7 +81,7 @@ export const parseMarkerStyle = (
 export const parseTextStyle = (
   id: string,
   setting: AnnotationSettings,
-  source: () => Trajectory[],
+  source: Trajectory[],
   getPoints: (T: Trajectory) => Trajectorypoint[]
 ): TrajectoryTextGroupProps => {
   const styles = setting.styles as TextStyle;
@@ -114,7 +114,7 @@ export interface AnnotationSettings {
 export class Annotation {
   public id;
   public type: AnnotationType;
-  public source: () => Trajectory[];
+  public source: Trajectory[];
   public getPositions: (T: Trajectory) => Trajectorypoint[];
   public trajectorypointGroup: TrajectoryPointGroup | null = null;
   public trajectorymarkerGroup: TrajectoryMarkerGroup | null = null;
@@ -123,25 +123,25 @@ export class Annotation {
   constructor(
     id: string,
     setting: AnnotationSettings,
-    getData: () => Trajectory[],
+    data: Trajectory[],
     core: Trajectoolkit
   ) {
     this.type = setting.type;
     this.id = id;
-    this.source = () => getData();
+    this.source = data;
     this.getPositions = positionParse(setting.source, setting.type, core);
     if (this.type == 'points') {
       //this.clearMarkers(this.id, core);
       this.trajectorypointGroup = core.addPointGroup(
         parsePointStyle(this.id, setting, () =>
-          this.source().flatMap((T) => this.getPositions(T))
+          this.source.flatMap((T) => this.getPositions(T))
         )
       );
     }
     if (this.type == 'markers') {
       this.trajectorymarkerGroup = core.addMarkerGroup(
         parseMarkerStyle(this.id, setting, () =>
-          this.source().flatMap((T) => this.getPositions(T))
+          this.source.flatMap((T) => this.getPositions(T))
         )
       );
     }

@@ -6,7 +6,7 @@ import { parseAttributeEither } from '../parseString/regex';
 
 export type TrajectoryTextGroupProps = {
   id: string;
-  source: () => Trajectory[];
+  source: Trajectory[];
   getPoints: (T: Trajectory) => Trajectorypoint[];
   maxZoom?: number;
   minZoom?: number;
@@ -68,7 +68,7 @@ export class TrajectoryTextGroup {
     });
   }
   private _createMarkerElements(
-    source: () => Trajectory[],
+    source: Trajectory[],
     getPoints: (T: Trajectory) => Trajectorypoint[]
   ) {
     // const colorConverter = new ColorConverter(
@@ -91,7 +91,7 @@ export class TrajectoryTextGroup {
       : false;
     const transform =
       this.props.encodings.transform || defaultEncoding.transform;
-    const data = source().flatMap((T) =>
+    const data = source.flatMap((T) =>
       getPoints(T).map((p) => {
         return { t: T, p: p };
       })

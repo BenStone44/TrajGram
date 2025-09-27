@@ -423,9 +423,8 @@ export class Trajectoolkit implements IControl {
     return newlayer;
   }
 
-  public async addTrajectoryGroup(info: TrajectoryGroupProps) {
+  public addTrajectoryGroup(info: TrajectoryGroupProps) {
     const newlayer = new TrajectoryGroup(this, info);
-    await newlayer.initialize();
     this.trajectoryRendering.groups.set(info.id, newlayer);
     newlayer.draw();
     return newlayer;

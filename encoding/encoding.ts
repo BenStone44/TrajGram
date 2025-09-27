@@ -42,7 +42,7 @@ export class Encoding {
   public id: string;
   public setting: EncodingSettings;
   public data!: () => Trajectory[];
-  public trajectoryGroup!: TrajectoryGroup;
+  public trajectoryGroup!: TrajectoryGroup | Promise<TrajectoryGroup>;
   public annotations = new Map<string, Annotation>();
   public mappingFunction: StyleMappingFunction = {} as StyleMappingFunction;
   public static type = 'encoding';
@@ -80,26 +80,25 @@ export class Encoding {
         this.mappingFunction.opacity = func as { type: string; value: NumricFunction}
         break      
     }
-    this.draw()
+    this.update()
   }
-  draw() {
+
+
+  async update() {
+    const data = await this.core.getDQSDatabyID(this.setting.source)
     this.trajectoryGroup = this.core.addTrajectoryGroup(
-      parseTrajectoryStyle(this.core, this.setting, this.mappingFunction)
+      parseTrajectoryStyle(this.setting, data, this.mappingFunction)
     );
-  }
+    for (const annotationId in this.setting.annotations) {
+      const anntationsetting = this.setting.annotations[annotationId];
 
-  update() {
-    this.draw();
-    // for (const annotationId in this.setting.annotations) {
-    //   const anntationsetting = this.setting.annotations[annotationId];
-
-    //   const newAnnotation = new Annotation(
-    //     annotationId,
-    //     anntationsetting,
-    //     this.data,
-    //     this.core
-    //   );
-    //   this.annotations.set(annotationId, newAnnotation);
-    // }
+      const newAnnotation = new Annotation(
+        annotationId,
+        anntationsetting,
+        data,
+        this.core
+      );
+      this.annotations.set(annotationId, newAnnotation);
+    }
   }
 }

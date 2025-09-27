@@ -25,7 +25,7 @@ export type renderInfos = {
 
 export type TrajectoryGroupProps = {
   id: string;
-  data: () => Trajectory[] | Promise<Trajectory[]>;
+  data: Trajectory[];
   maxZoom?: number;
   minZoom?: number;
   widthFollowZoom?: boolean;
@@ -183,13 +183,10 @@ export class TrajectoryGroup {
       TrajectoryGroup.vertexShader,
       TrajectoryGroup.fragmentShader
     );
-  }
-
-  async initialize(): Promise<void> {
-    const data = await this.props.data();
-    this._createTrajectoryElements(data);
+    this._createTrajectoryElements(this.props.data);
     this._createArrayBuffers();
   }
+
   public setGroupStyle(type: styleType, value: number | number[]) {
     for (const element in this.elementDict) {
       this.elementDict[element].setStyle(type, value);
@@ -231,12 +228,6 @@ export class TrajectoryGroup {
         this.elementDict[newid] = newTrajectory;
       }
     });
-  }
-
-  // 修改调用 _createTrajectoryElements 的地方，等待数据获取完成
-  public async createTrajectoryElementsAsync(props: TrajectoryGroupProps) {
-    const data = await props.data();
-    this._createTrajectoryElements(data);
   }
 
   private _createArrayBuffers() {

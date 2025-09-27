@@ -229,13 +229,13 @@ export const calculatDirection3P = (
 
 // 修改 parseTrajectoryStyle 函数，返回异步数据获取函数
 export const parseTrajectoryStyle = (
-  core: Trajectoolkit,
   props: EncodingSettings,
+  data: Trajectory[],
   styles: StyleMappingFunction,
 ): TrajectoryGroupProps => {
   return {
     id: props.id,
-    data: async () => await core.getDQSDatabyID(props.source) as any,
+    data: data,
     maxZoom: props.maxzoom,
     minZoom: props.minzoom,
     capStyle: props.capstyle,
