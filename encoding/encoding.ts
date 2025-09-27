@@ -57,7 +57,7 @@ export class Encoding {
   }
   initial() {
     this.data = () =>
-    this.core.getDQSDatabyID(this.setting.source) as Trajectory[];
+    this.core.getDQSDatabyID(this.setting.source) as any;
     this.core.getDQSbyID(this.setting.source)?.children.push(this);
     this.initialMappingFunction();
   }
@@ -90,16 +90,16 @@ export class Encoding {
 
   update() {
     this.draw();
-    for (const annotationId in this.setting.annotations) {
-      const anntationsetting = this.setting.annotations[annotationId];
+    // for (const annotationId in this.setting.annotations) {
+    //   const anntationsetting = this.setting.annotations[annotationId];
 
-      const newAnnotation = new Annotation(
-        annotationId,
-        anntationsetting,
-        this.data,
-        this.core
-      );
-      this.annotations.set(annotationId, newAnnotation);
-    }
+    //   const newAnnotation = new Annotation(
+    //     annotationId,
+    //     anntationsetting,
+    //     this.data,
+    //     this.core
+    //   );
+    //   this.annotations.set(annotationId, newAnnotation);
+    // }
   }
 }

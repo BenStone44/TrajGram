@@ -81,7 +81,9 @@ export class Trajectoolkit implements IControl {
 
   public markers: any[] = [];
 
-  constructor() {
+  private _baseUrl: string = '';
+
+  constructor(baseUrl?: string) {
     this.trajectoryRendering = {
       gl: null,
       frameBuffer: null,
@@ -96,6 +98,23 @@ export class Trajectoolkit implements IControl {
     };
     this.markerRendering = { groups: new Map<string, TrajectoryMarkerGroup>() };
     this.textRendering = { groups: new Map<string, TrajectoryTextGroup>() };
+
+    if (baseUrl) {
+      this._baseUrl = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
+    }
+  }
+
+    // 简化的 API 调用方法
+  public async get(endpoint: string) {
+    try {
+      const response = await fetch(`${this._baseUrl}${endpoint}`);
+      const data = await response.json();
+      console.log(data)
+      return data;
+    } catch (error) {
+      console.error('请求失败:', error);
+      throw error;
+    }
   }
 
   public setData(id: string, data: Data) {
@@ -152,14 +171,31 @@ export class Trajectoolkit implements IControl {
     return this.textRendering.groups.get(id);
   }
 
-  // get data from data, query or selection
-  public getDQSDatabyID(id: string) {
+  // 修改 getDQSDatabyID 函数，解析后端返回的数据
+  public async getDQSDatabyID(id: string): Promise<any> {
+    // 如果配置了后端URL，从后端获取数据
+    if (this._baseUrl) {
+      try {
+        const response = await this.get(`/api/dqs/${id}/data`);
+        // 解析后端返回的数据格式 {success: true, id: 'trajectory_data', data: Array(1458)}
+        if (response && response.success && response.data) {
+          return response.data;
+        }
+        return response;
+      } catch (error) {
+        console.warn('从后端获取数据失败，尝试本地数据:', error);
+        // 后端获取失败时fallback到本地数据
+      }
+    }
+    
+    // 本地数据获取
     return (
       this.getDataByID(id)?.data ||
       this.getQueryByID(id)?.queryResult() ||
       (this.getSelectionByID(id)?.component as MouseSelection).MouseSelectionResult
     );
   }
+
 
   public getDQSbyID(id: string) {
     return (
@@ -387,12 +423,14 @@ export class Trajectoolkit implements IControl {
     return newlayer;
   }
 
-  public addTrajectoryGroup(info: TrajectoryGroupProps): TrajectoryGroup {
+  public async addTrajectoryGroup(info: TrajectoryGroupProps) {
     const newlayer = new TrajectoryGroup(this, info);
+    await newlayer.initialize();
     this.trajectoryRendering.groups.set(info.id, newlayer);
     newlayer.draw();
     return newlayer;
   }
+
   public addMarkerGroup(
     info: TrajectoryMarkerGroupProps
   ): TrajectoryMarkerGroup {
@@ -538,7 +576,21 @@ export class Trajectoolkit implements IControl {
   }
 
   public jsonParser = (jsonFile: any) => {
-    if (this.map) {
+
+    if(this._baseUrl) {
+      if (jsonFile.selections) {
+        const selectKeys = Object.keys(jsonFile.selections);
+        selectKeys.forEach((selectKey: string) => {
+          const selectItem = jsonFile.selections[selectKey];
+          this.addSelectionByJson({ id: selectKey, type: selectItem });
+        });
+      }
+
+      jsonFile.encodings?.forEach((encodingItem: EncodingSettings) => {
+        this.addEncodingByJson(encodingItem);
+      });
+    }
+     else if (this.map) {
       const dss: DataSetting[] = jsonFile.data;
       const fetchPromises = dss.map((ds) => fetch(ds.url).then((response) => response.json()));
       Promise.all(fetchPromises)

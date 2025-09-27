@@ -37,7 +37,7 @@ export class Query {
     this.core = core;
     this.id = specification.id;
     this.source = () =>
-      core.getDQSDatabyID(specification.source) as Trajectory[];
+      core.getDQSDatabyID(specification.source) as any;
     core.getDQSbyID(specification.source)?.children.push(this);
     this.type = specification.type;
     //如果是filter，才会有condition
@@ -197,7 +197,7 @@ export class Query {
     const formedNewRoadnetwork: RoadNetworkItem[] = [];
     const roadnetworkData = this.core.getDQSDatabyID(
       'roadnetwork'
-    ) as RoadNetworkItem[];
+    ) as any;
     data.forEach((pertra: Trajectory) => {
       const attributes = pertra.attributes;
       if (attributes) {
@@ -245,7 +245,7 @@ export class Query {
             value: 1
           });
         }
-        const findItem = roadnetworkData.find((obj) => obj.id === perItem.id);
+        const findItem = roadnetworkData.find((obj: any) => obj.id === perItem.id);
         if (findItem) {
           //用路段的距离*volume
           const speed =

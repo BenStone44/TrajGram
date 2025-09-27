@@ -114,7 +114,7 @@ export class LensSVG {
             ]);
 
             const dis = turf.distance(lensCenter, startpoint, { units: 'kilometers' });
-
+            
             return dis * 1000 < r;
           }
           case 'trajectory': {

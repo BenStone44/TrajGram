@@ -227,6 +227,7 @@ export const calculatDirection3P = (
   return { x: vector2.x - vector1.x, y: vector2.y - vector1.y };
 };
 
+// 修改 parseTrajectoryStyle 函数，返回异步数据获取函数
 export const parseTrajectoryStyle = (
   core: Trajectoolkit,
   props: EncodingSettings,
@@ -234,7 +235,7 @@ export const parseTrajectoryStyle = (
 ): TrajectoryGroupProps => {
   return {
     id: props.id,
-    data: () => core.getDQSDatabyID(props.source) as Trajectory[],
+    data: async () => await core.getDQSDatabyID(props.source) as any,
     maxZoom: props.maxzoom,
     minZoom: props.minzoom,
     capStyle: props.capstyle,
