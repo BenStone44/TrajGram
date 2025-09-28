@@ -611,43 +611,78 @@ export class Trajectoolkit implements IControl {
   }
 
   public jsonParser = (jsonFile: any) => {
+      if (this.map) {
+          const dss: DataSetting[] = jsonFile.data;
+          
+          // 如果存在 _baseUrl，跳过数据获取但仍然添加 data
+          if (this._baseUrl) {
+              console.log('Base URL exists, skipping data fetch');
+              
+              // 直接创建带有 null data 的 dataprops
+              const dataprops = dss.map((ds) => {
+                  return {
+                      id: ds.id,
+                      type: ds.type,
+                      data: null
+                  };
+              });
 
-     if (this.map) {
-      const dss: DataSetting[] = jsonFile.data;
-      const fetchPromises = dss.map((ds) => fetch(ds.url).then((response) => response.json()));
-      Promise.all(fetchPromises)
-        .then((results) => {
-          const dataprops = results.map((result, i) => {
-            return {
-              id: dss[i].id,
-              type: dss[i].type,
-              data: result
-            };
-          });
+              dataprops.forEach((dataprop) => this.addDataByProps(dataprop));
 
-          dataprops.forEach((dataprop) => this.addDataByProps(dataprop));
+              // 处理其他配置项
+              if (jsonFile.selections) {
+                  const selectKeys = Object.keys(jsonFile.selections);
+                  selectKeys.forEach((selectKey: string) => {
+                      const selectItem = jsonFile.selections[selectKey];
+                      this.addSelectionByJson({ id: selectKey, type: selectItem });
+                  });
+              }
 
-          if (jsonFile.selections) {
-            const selectKeys = Object.keys(jsonFile.selections);
-            selectKeys.forEach((selectKey: string) => {
-              const selectItem = jsonFile.selections[selectKey];
-              this.addSelectionByJson({ id: selectKey, type: selectItem });
-            });
+              jsonFile.queries?.forEach((queryItem: QuerySetting) => {
+                  this.addQueryByJson(queryItem);
+              });
+
+              jsonFile.encodings?.forEach((encodingItem: EncodingSettings) => {
+                  this.addEncodingByJson(encodingItem);
+              });
+              
+              return;
           }
 
-          jsonFile.queries?.forEach((queryItem: QuerySetting) => {
-            this.addQueryByJson(queryItem);
-          });
+          // 原有的数据获取逻辑
+          const fetchPromises = dss.map((ds) => fetch(ds.url).then((response) => response.json()));
+          Promise.all(fetchPromises)
+              .then((results) => {
+                  const dataprops = results.map((result, i) => {
+                      return {
+                          id: dss[i].id,
+                          type: dss[i].type,
+                          data: result
+                      };
+                  });
 
-          jsonFile.encodings?.forEach((encodingItem: EncodingSettings) => {
-            this.addEncodingByJson(encodingItem);
-          });
-        })
-        .catch((error) => {
-          // 如果任一请求失败，Promise.all 的 catch 将捕获到异常
-          console.error('请求失败:', error);
-        });
-    }
+                  dataprops.forEach((dataprop) => this.addDataByProps(dataprop));
+
+                  if (jsonFile.selections) {
+                      const selectKeys = Object.keys(jsonFile.selections);
+                      selectKeys.forEach((selectKey: string) => {
+                          const selectItem = jsonFile.selections[selectKey];
+                          this.addSelectionByJson({ id: selectKey, type: selectItem });
+                      });
+                  }
+
+                  jsonFile.queries?.forEach((queryItem: QuerySetting) => {
+                      this.addQueryByJson(queryItem);
+                  });
+
+                  jsonFile.encodings?.forEach((encodingItem: EncodingSettings) => {
+                      this.addEncodingByJson(encodingItem);
+                  });
+              })
+              .catch((error) => {
+                  console.error('请求失败:', error);
+              });
+      }
   };
 
 }

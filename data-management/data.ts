@@ -19,13 +19,13 @@ export interface DataSetting {
 export interface DataProps {
   id: string;
   type: DataType;
-  data: standardDataFormat;
+  data: standardDataFormat | null;
 }
 
 export class Data {
   public id = 'null';
   public type: DataType = 'geojson';
-  public data: standardDataFormat = [];
+  public data: standardDataFormat | null = null;
   public children: RelationTreeNode[] = [];
   public callBack = new Map<string, () => any>();
 
