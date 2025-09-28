@@ -372,7 +372,7 @@ export class TrajectoryPointGroup {
     const scale: [number, number] = [zoom2scale(zoom), zoom2scale(zoom)];
 
     //z-index
-    const zIndex = this.props.zIndex ?? 2;
+    const zIndex = this.props.zIndex || 2;
     gl.uniform1f(gl.getUniformLocation(this.program, 'uZIndex'), zIndex);
 
     // Scale

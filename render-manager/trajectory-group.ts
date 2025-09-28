@@ -111,7 +111,7 @@ export class TrajectoryGroup {
 
 
         void main() {
-            float normalizedZ = uZIndex * 0.001;
+            float normalizedZ = uZIndex * 0.1;
             vec2 aPosition = latlng2pixel(llPosition, uTranslation, uScale);
             vec2 aPrevious = latlng2pixel(llPrevious, uTranslation, uScale);
             vec2 aAfter = latlng2pixel(llAfter, uTranslation, uScale);
@@ -842,8 +842,9 @@ export class TrajectoryGroup {
     ];
     const scale: [number, number] = [zoom2scale(zoom), zoom2scale(zoom)];
 
-    const zIndex = this.props.zIndex ?? 0;
+    const zIndex = this.props.zIndex || 0;
     gl.uniform1f(gl.getUniformLocation(this.program, 'uZIndex'), zIndex);
+    console.log(this.props.id, zIndex)
 
     
     // Scale

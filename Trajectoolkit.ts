@@ -136,6 +136,20 @@ export class Trajectoolkit implements IControl {
     }
   }
 
+  public async updateConfig(config: any) {
+    if (!config) {
+      throw new Error('config 不能为空');
+    }
+
+    try {
+      const result = await this.put('/api/config', { config });
+      return result;
+    } catch (error) {
+      console.error('更新配置失败:', error);
+      throw error;
+    }
+  }
+
   public setData(id: string, data: Data) {
     const data_id = 'd_' + id;
     this._data.set(data_id, data);
@@ -408,10 +422,10 @@ export class Trajectoolkit implements IControl {
         
         if (!gl_t) throw new Error('webgl2 is not supported!');
         
-        // 设置深度测试
-        gl_t.enable(gl_t.DEPTH_TEST);
-        gl_t.depthFunc(gl_t.LESS);  // 改为 LESS
-        gl_t.clearDepth(1.0);       // 设置清除深度值
+        // // 设置深度测试
+        // gl_t.enable(gl_t.DEPTH_TEST);
+        // gl_t.depthFunc(gl_t.LEQUAL);
+        // gl_t.clearDepth(1.0);
         
         this.trajectoryRendering.container = canvas_t;
         this.trajectoryRendering.gl = gl_t;
@@ -434,9 +448,9 @@ export class Trajectoolkit implements IControl {
         
         if (!gl_p) throw new Error('webgl2 is not supported!');
         
-        gl_p.enable(gl_p.DEPTH_TEST);
-        gl_p.depthFunc(gl_p.LESS);
-        gl_p.clearDepth(1.0);
+        // gl_p.enable(gl_p.DEPTH_TEST);
+        // gl_p.depthFunc(gl_p.LEQUAL);
+        // gl_p.clearDepth(1.0);
         
         this.pointRendering.container = canvas_p;
         this.pointRendering.gl = gl_p;
@@ -587,8 +601,21 @@ export class Trajectoolkit implements IControl {
     this._drawAll();
   };
 
-  private _drawAll() {
-    for (const value of this.trajectoryRendering.groups.values()) value?.draw();
+  private async _drawAll() {
+    // 将 group 转成数组
+// 将 group 转成数组并排序
+    const layers = Array.from(this.trajectoryRendering.groups.values())
+      .filter(v => v)
+      .sort((a, b) => {
+        const za = a.props?.zIndex || 0;
+        const zb = b.props?.zIndex || 0;
+        return za - zb; // 小的先画，大的覆盖
+      });
+
+    // 依次顺序执行
+    for (const layer of layers) {
+      await layer.draw(); // 等待每个 draw() 执行完成
+    }
     for (const value of this.pointRendering.groups.values()) value?.draw();
     for (const value of this.markerRendering.groups.values()) value?.update();
     for (const value of this.textRendering.groups.values()) value?.update();
@@ -611,13 +638,14 @@ export class Trajectoolkit implements IControl {
     }
   }
 
-  public jsonParser = (jsonFile: any) => {
+  public jsonParser = async (jsonFile: any) => {
     if (this.map) {
         const dss: DataSetting[] = jsonFile.data;
         
         // 如果存在 _baseUrl，跳过数据获取但仍然添加 data
         if (this._baseUrl) {
             console.log('Base URL exists, skipping data fetch');
+            await this.updateConfig(jsonFile)
             
             // 直接创建带有 null data 的 dataprops
             const dataprops = dss.map((ds) => {
