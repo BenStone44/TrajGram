@@ -844,7 +844,6 @@ export class TrajectoryGroup {
 
     const zIndex = this.props.zIndex || 0;
     gl.uniform1f(gl.getUniformLocation(this.program, 'uZIndex'), zIndex);
-    console.log(this.props.id, zIndex)
 
     
     // Scale
