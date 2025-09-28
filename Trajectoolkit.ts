@@ -81,7 +81,7 @@ export class Trajectoolkit implements IControl {
 
   public markers: any[] = [];
 
-  private _baseUrl: string = '';
+  public _baseUrl: string = '';
 
   constructor(baseUrl?: string) {
     this.trajectoryRendering = {
@@ -113,6 +113,25 @@ export class Trajectoolkit implements IControl {
       return data;
     } catch (error) {
       console.error('请求失败:', error);
+      throw error;
+    }
+  }
+
+  // PUT 请求方法
+  public async put(endpoint: string, data?: any) {
+    try {
+      const response = await fetch(`${this._baseUrl}${endpoint}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: data ? JSON.stringify(data) : undefined
+      });
+      
+      const responseData = await response.json();
+      return responseData;
+    } catch (error) {
+      console.error('PUT请求失败:', error);
       throw error;
     }
   }
@@ -352,61 +371,78 @@ export class Trajectoolkit implements IControl {
     }
   }
   private _createSVGandCanvasContainer() {
-    if (this._container && this.map) {
-      const { clientWidth, clientHeight } = this.map.getContainer();
+      if (this._container && this.map) {
+        const { clientWidth, clientHeight } = this.map.getContainer();
 
-      // 创建 SVG 元素
-      const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        // 创建 SVG 元素
+        const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        svg.style.width = `${clientWidth}px`;
+        svg.style.height = `${clientHeight}px`;
+        svg.style.zIndex = '10';
 
-      svg.style.width = `${clientWidth}px`;
-      svg.style.height = `${clientHeight}px`;
-      svg.style.zIndex = '10';
+        Object.assign(svg.style, {
+          position: 'absolute',
+          PointerEvent: 'all',
+          left: 0,
+          top: 0
+        });
 
-      Object.assign(svg.style, {
-        position: 'absolute',
-        PointerEvent: 'all',
-        left: 0,
-        top: 0
-      });
+        this._container.appendChild(svg);
+        this.SVG = svg;
 
-      // 将 SVG 添加到容器中
-      this._container.appendChild(svg);
-      this.SVG = svg;
+        // 创建trajectory container
+        const canvas_t = document.createElement('canvas');
+        if (!canvas_t) throw new Error('Crate canvas element error!');
+        canvas_t.width = clientWidth;
+        canvas_t.height = clientHeight;
+        this._container.appendChild(canvas_t);
 
-      // 创建trajectory container
-      const canvas_t = document.createElement('canvas');
+        // 关键：在获取上下文时指定深度缓冲区
+        const gl_t = canvas_t.getContext('webgl2', {
+          depth: true,        // 启用深度缓冲区
+          stencil: false,
+          antialias: true,
+          alpha: true,
+          premultipliedAlpha: false
+        });
+        
+        if (!gl_t) throw new Error('webgl2 is not supported!');
+        
+        // 设置深度测试
+        gl_t.enable(gl_t.DEPTH_TEST);
+        gl_t.depthFunc(gl_t.LESS);  // 改为 LESS
+        gl_t.clearDepth(1.0);       // 设置清除深度值
+        
+        this.trajectoryRendering.container = canvas_t;
+        this.trajectoryRendering.gl = gl_t;
 
-      if (!canvas_t) throw new Error('Crate canvas element error!');
-      canvas_t.width = clientWidth;
-      canvas_t.height = clientHeight;
+        // 创建point container
+        const canvas_p = document.createElement('canvas');
+        if (!canvas_p) throw new Error('Crate canvas element error!');
+        canvas_p.width = clientWidth;
+        canvas_p.height = clientHeight;
+        this._container.appendChild(canvas_p);
 
-      this._container.appendChild(canvas_t);
+        // 同样为点渲染启用深度缓冲区
+        const gl_p = canvas_p.getContext('webgl2', {
+          depth: true,
+          stencil: false,
+          antialias: true,
+          alpha: true,
+          premultipliedAlpha: false
+        });
+        
+        if (!gl_p) throw new Error('webgl2 is not supported!');
+        
+        gl_p.enable(gl_p.DEPTH_TEST);
+        gl_p.depthFunc(gl_p.LESS);
+        gl_p.clearDepth(1.0);
+        
+        this.pointRendering.container = canvas_p;
+        this.pointRendering.gl = gl_p;
 
-      const gl_t = canvas_t.getContext('webgl2');
-      if (!gl_t) throw new Error('webgl2 is not supported!');
-      // gl_t.clearColor(1, 1, 1, 0);
-
-      this.trajectoryRendering.container = canvas_t;
-      this.trajectoryRendering.gl = gl_t;
-
-      // 创建point container
-      const canvas_p = document.createElement('canvas');
-
-      if (!canvas_p) throw new Error('Crate canvas element error!');
-      canvas_p.width = clientWidth;
-      canvas_p.height = clientHeight;
-
-      this._container.appendChild(canvas_p);
-
-      const gl_p = canvas_p.getContext('webgl2');
-      if (!gl_p) throw new Error('webgl2 is not supported!');
-      // gl_p.clearColor(1, 1, 1, 0);
-
-      this.pointRendering.container = canvas_p;
-      this.pointRendering.gl = gl_p;
-
-      this._updateContainerSize();
-    }
+        this._updateContainerSize();
+      }
   }
 
   public clearSVG() {
@@ -419,14 +455,14 @@ export class Trajectoolkit implements IControl {
   public addPointGroup(info: TrajectoryPointGroupProps): TrajectoryPointGroup {
     const newlayer = new TrajectoryPointGroup(this, info);
     this.pointRendering.groups.set(info.id, newlayer);
-    newlayer.draw();
+    this._refresh()
     return newlayer;
   }
 
   public addTrajectoryGroup(info: TrajectoryGroupProps) {
     const newlayer = new TrajectoryGroup(this, info);
     this.trajectoryRendering.groups.set(info.id, newlayer);
-    newlayer.draw();
+    this._refresh()
     return newlayer;
   }
 
@@ -576,20 +612,7 @@ export class Trajectoolkit implements IControl {
 
   public jsonParser = (jsonFile: any) => {
 
-    if(this._baseUrl) {
-      if (jsonFile.selections) {
-        const selectKeys = Object.keys(jsonFile.selections);
-        selectKeys.forEach((selectKey: string) => {
-          const selectItem = jsonFile.selections[selectKey];
-          this.addSelectionByJson({ id: selectKey, type: selectItem });
-        });
-      }
-
-      jsonFile.encodings?.forEach((encodingItem: EncodingSettings) => {
-        this.addEncodingByJson(encodingItem);
-      });
-    }
-     else if (this.map) {
+     if (this.map) {
       const dss: DataSetting[] = jsonFile.data;
       const fetchPromises = dss.map((ds) => fetch(ds.url).then((response) => response.json()));
       Promise.all(fetchPromises)

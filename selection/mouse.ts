@@ -98,7 +98,9 @@ export class MouseSelection {
     }
   }
 
-
+  public toGeoElement() {
+    
+  }
   pickTrajectory(point: mapboxgl.Point) {
     for (const group of this.core.trajectoryRendering.groups.values()) {
       const T = group.pick(point);

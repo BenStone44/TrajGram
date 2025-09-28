@@ -26,6 +26,7 @@ export type renderInfos = {
 export type TrajectoryGroupProps = {
   id: string;
   data: Trajectory[];
+  zIndex?: number;
   maxZoom?: number;
   minZoom?: number;
   widthFollowZoom?: boolean;
@@ -52,6 +53,7 @@ export class TrajectoryGroup {
         attribute vec2 llAfter;
         attribute float aWidth;
         
+        
         attribute vec4 aColor;
         attribute vec4 offColor;
         
@@ -65,6 +67,7 @@ export class TrajectoryGroup {
         uniform vec2 uScale;
         uniform float uRatio;
         uniform bool uOffScreen;
+        uniform float uZIndex;
         // varying highp vec2 vTextureCoord;
 
         vec2 adjustPoint(vec2 current, vec2 toBeAdjustPoint, vec2 referPoint) {
@@ -108,6 +111,7 @@ export class TrajectoryGroup {
 
 
         void main() {
+            float normalizedZ = uZIndex * 0.001;
             vec2 aPosition = latlng2pixel(llPosition, uTranslation, uScale);
             vec2 aPrevious = latlng2pixel(llPrevious, uTranslation, uScale);
             vec2 aAfter = latlng2pixel(llAfter, uTranslation, uScale);
@@ -150,7 +154,7 @@ export class TrajectoryGroup {
               moveDistance = maxMiterLength * uRatio;
 
 
-            gl_Position = vec4(aPosition / uResolution + moveDirection * moveDistance / uResolution, 0.0, 1.0);
+            gl_Position = vec4(aPosition / uResolution + moveDirection * moveDistance / uResolution, normalizedZ, 1.0);
 
             // vTextureCoord = aTextureCoord;
             if(uOffScreen)
@@ -838,6 +842,10 @@ export class TrajectoryGroup {
     ];
     const scale: [number, number] = [zoom2scale(zoom), zoom2scale(zoom)];
 
+    const zIndex = this.props.zIndex ?? 0;
+    gl.uniform1f(gl.getUniformLocation(this.program, 'uZIndex'), zIndex);
+
+    
     // Scale
     gl.uniform2fv(gl.getUniformLocation(this.program, 'uScale'), scale);
 

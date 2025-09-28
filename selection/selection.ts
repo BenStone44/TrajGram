@@ -23,19 +23,22 @@ export interface SelectionProps {
 }
 
 export class Selection {
+  private core: Trajectoolkit;
   public type: SelectionType;
   public component: LensSVG | drawArea | MouseSelection;
   public match?: {
     point: (P: TrajectoryPointElement) => boolean;
     trajectory: (T: TrajectoryElement) => boolean;
   };
+  public id: string;
 
   public children: RelationTreeNode[] = [];
   callBack = new Map<string, () => any>();
 
   constructor(props: SelectionProps, core: Trajectoolkit) {
-    // this.core = core;
+    this.core = core;
     this.type = props.type;
+    this.id = props.id;
     switch (this.type) {
       case 'lens.start':
       case 'lens.end':
@@ -46,7 +49,8 @@ export class Selection {
             this.type,
             parseLensInfo(props.style, core)
           );
-          newcomp.Drag.setOnMouseUpCallback(() => {
+          newcomp.Drag.setOnMouseUpCallback(async () => {
+            await this.updateBackendGeoElement()
             this.children.forEach((child) => {
               child.update();
               core._refresh();
@@ -66,8 +70,9 @@ export class Selection {
           props.type as MouseEventType,
           core
         );
-        newMouseEvent.setCallBack(() => {
-            this.children.forEach((child) => {
+        newMouseEvent.setCallBack(async() => {
+            await this.updateBackendGeoElement()
+            this.children.forEach( (child) => {
               child.update();
               core._refresh();
             });
@@ -88,6 +93,21 @@ export class Selection {
       this.type === 'lens.start'
     )
       (this.component as LensSVG).draw();
+  }
+
+  public async updateBackendGeoElement() {
+    if(!this.core._baseUrl) return
+    try {
+      const result = await this.core.put(`/api/selection/${this.id}/geo-element`, {
+        geoElement: this.component.toGeoElement()
+      }
+      );
+      
+      return result;
+    } catch (error) {
+      console.error('更新 geo-element 失败:', error);
+      throw error;
+    }
   }
 
   public update() {

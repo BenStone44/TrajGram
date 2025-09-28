@@ -24,6 +24,7 @@ export type TrajectoryPointGroupProps = {
   maxZoom?: number;
   minZoom?: number;
   widthFollowZoom?: boolean;
+  zIndex?: number;
   encodings: {
     color?: colorArray | string;
     r?: number | string;
@@ -56,6 +57,7 @@ export class TrajectoryPointGroup {
           uniform vec2 uScale;
           uniform float uRatio;
           uniform bool uOffScreen;
+          uniform float uZIndex;
 
           vec2 latlng2pixel(vec2 latlng, vec2 u_translation, vec2 u_scale) {
               float pi = 3.1415926535;
@@ -85,7 +87,9 @@ export class TrajectoryPointGroup {
   
           void main() {
               vec2 aPosition = latlng2pixel(aLngLat, uTranslation, uScale);
-              gl_Position = vec4(aPosition/ uResolution, 0.0, 1.0);
+              float normalizedZ = uZIndex * 0.001;
+              gl_Position = vec4(aPosition/ uResolution, normalizedZ, 1.0);
+              
               if(uOffScreen)
                 vColor = offColor;
               else 
@@ -366,6 +370,10 @@ export class TrajectoryPointGroup {
       gl.canvas.height / 2 - centerP.y
     ];
     const scale: [number, number] = [zoom2scale(zoom), zoom2scale(zoom)];
+
+    //z-index
+    const zIndex = this.props.zIndex ?? 2;
+    gl.uniform1f(gl.getUniformLocation(this.program, 'uZIndex'), zIndex);
 
     // Scale
     gl.uniform2fv(gl.getUniformLocation(this.program, 'uScale'), scale);

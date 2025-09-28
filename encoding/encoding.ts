@@ -16,6 +16,7 @@ export interface EncodingSettings {
     width?: string | number;
     opacity?: string | number;
   };
+  zIndex?: number;
   maxzoom?: number;
   minzoom?: number;
   capstyle?: 'round' | 'square';
@@ -47,6 +48,7 @@ export class Encoding {
   public mappingFunction: StyleMappingFunction = {} as StyleMappingFunction;
   public static type = 'encoding';
   public isHoverorClick = false;
+  private cached_data: Trajectory[] = [];
   private core: Trajectoolkit;
   constructor(props: EncodingSettings, core: Trajectoolkit) {
     this.setting = props;
@@ -80,14 +82,13 @@ export class Encoding {
         this.mappingFunction.opacity = func as { type: string; value: NumricFunction}
         break      
     }
-    this.update()
+    this.draw()
   }
 
 
-  async update() {
-    const data = await this.core.getDQSDatabyID(this.setting.source)
+  draw() {
     this.trajectoryGroup = this.core.addTrajectoryGroup(
-      parseTrajectoryStyle(this.setting, data, this.mappingFunction)
+      parseTrajectoryStyle(this.setting, this.cached_data, this.mappingFunction)
     );
     for (const annotationId in this.setting.annotations) {
       const anntationsetting = this.setting.annotations[annotationId];
@@ -95,10 +96,14 @@ export class Encoding {
       const newAnnotation = new Annotation(
         annotationId,
         anntationsetting,
-        data,
+        this.cached_data,
         this.core
       );
       this.annotations.set(annotationId, newAnnotation);
     }
+  }
+  async update() {
+    this.cached_data = await this.core.getDQSDatabyID(this.setting.source)
+    this.draw()
   }
 }

@@ -236,6 +236,7 @@ export const parseTrajectoryStyle = (
   return {
     id: props.id,
     data: data,
+    zIndex: props.zIndex,
     maxZoom: props.maxzoom,
     minZoom: props.minzoom,
     capStyle: props.capstyle,

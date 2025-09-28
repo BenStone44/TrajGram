@@ -39,4 +39,7 @@ export class drawArea {
   //   }
   //   console.log('data', data);
   // }
+  public toGeoElement() {
+    
+  }
 }
