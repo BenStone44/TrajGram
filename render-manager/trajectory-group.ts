@@ -154,7 +154,7 @@ export class TrajectoryGroup {
               moveDistance = maxMiterLength * uRatio;
 
 
-            gl_Position = vec4(aPosition / uResolution + moveDirection * moveDistance / uResolution, normalizedZ, 1.0);
+            gl_Position = vec4(aPosition / uResolution + moveDirection * moveDistance / uResolution, 0, 1.0);
 
             // vTextureCoord = aTextureCoord;
             if(uOffScreen)

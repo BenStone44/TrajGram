@@ -412,13 +412,7 @@ export class Trajectoolkit implements IControl {
         this._container.appendChild(canvas_t);
 
         // 关键：在获取上下文时指定深度缓冲区
-        const gl_t = canvas_t.getContext('webgl2', {
-          depth: true,        // 启用深度缓冲区
-          stencil: false,
-          antialias: true,
-          alpha: true,
-          premultipliedAlpha: false
-        });
+        const gl_t = canvas_t.getContext('webgl2');
         
         if (!gl_t) throw new Error('webgl2 is not supported!');
         
@@ -438,13 +432,7 @@ export class Trajectoolkit implements IControl {
         this._container.appendChild(canvas_p);
 
         // 同样为点渲染启用深度缓冲区
-        const gl_p = canvas_p.getContext('webgl2', {
-          depth: true,
-          stencil: false,
-          antialias: true,
-          alpha: true,
-          premultipliedAlpha: false
-        });
+        const gl_p = canvas_p.getContext('webgl2');
         
         if (!gl_p) throw new Error('webgl2 is not supported!');
         

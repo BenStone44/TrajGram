@@ -88,7 +88,7 @@ export class TrajectoryPointGroup {
           void main() {
               vec2 aPosition = latlng2pixel(aLngLat, uTranslation, uScale);
               float normalizedZ = uZIndex * 0.001;
-              gl_Position = vec4(aPosition/ uResolution, normalizedZ, 1.0);
+              gl_Position = vec4(aPosition/ uResolution, 0, 1.0);
               
               if(uOffScreen)
                 vColor = offColor;
