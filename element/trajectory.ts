@@ -1,5 +1,5 @@
 import { TrajectoryGroup } from '../render-manager/trajectory-group';
-import pointToLineDistance from '@turf/point-to-line-distance';
+// import pointToLineDistance from '@turf/point-to-line-distance';
 import type {
   AnnotationSubtrajectory,
   Trajectory,
@@ -9,7 +9,7 @@ import * as turf from '@turf/turf';
 import type { Feature, LineString } from 'geojson';
 
 import type { CircleRenderStyle } from './trajectorypoint';
-import type { GeoElement } from '../interfaces/geo';
+// import type { GeoElement } from '../interfaces/geo';
 import { ColorConverter } from '../utils/utils_color';
 export type bufferType = 'color' | 'vertices' | 'width' | 'undefined';
 export type pointInfoType =
@@ -167,54 +167,54 @@ export class TrajectoryElement {
   }
 
 
-  public intersecWith(element: GeoElement) {
-    if (element.type == 'circle') {
-      const point = turf.point([
-        element.shape.center.lng,
-        element.shape.center.lat
-      ]);
-      const dis = pointToLineDistance(point, this.feature, { units: 'meters' });
-      return dis < element.shape.r;
-    } else {
-      return turf.booleanIntersects(this.feature, element.shape) as boolean;
-    }
-  }
+  // public intersecWith(element: GeoElement) {
+  //   if (element.type == 'circle') {
+  //     const point = turf.point([
+  //       element.shape.center.lng,
+  //       element.shape.center.lat
+  //     ]);
+  //     const dis = pointToLineDistance(point, this.feature, { units: 'meters' });
+  //     return dis < element.shape.r;
+  //   } else {
+  //     return turf.booleanIntersects(this.feature, element.shape) as boolean;
+  //   }
+  // }
 
-  public startInside(element: GeoElement) {
-    const startpoint = turf.point([
-      this.startPoint.basePoint.position.lng,
-      this.startPoint.basePoint.position.lat
-    ]);
-    if (element.type == 'circle') {
-      const point = turf.point([
-        element.shape.center.lng,
-        element.shape.center.lat
-      ]);
+  // public startInside(element: GeoElement) {
+  //   const startpoint = turf.point([
+  //     this.startPoint.basePoint.position.lng,
+  //     this.startPoint.basePoint.position.lat
+  //   ]);
+  //   if (element.type == 'circle') {
+  //     const point = turf.point([
+  //       element.shape.center.lng,
+  //       element.shape.center.lat
+  //     ]);
 
-      const dis = turf.distance(point, startpoint, { units: 'kilometers' });
-      return dis * 1000 < element.shape.r;
-    } else {
-      return turf.booleanPointInPolygon(startpoint, element.shape) as boolean;
-    }
-  }
+  //     const dis = turf.distance(point, startpoint, { units: 'kilometers' });
+  //     return dis * 1000 < element.shape.r;
+  //   } else {
+  //     return turf.booleanPointInPolygon(startpoint, element.shape) as boolean;
+  //   }
+  // }
 
-  public endInside(element: GeoElement) {
-    const endpoint = turf.point([
-      this.endPoint.basePoint.position.lng,
-      this.endPoint.basePoint.position.lat
-    ]);
-    if (element.type == 'circle') {
-      const point = turf.point([
-        element.shape.center.lng,
-        element.shape.center.lat
-      ]);
+  // public endInside(element: GeoElement) {
+  //   const endpoint = turf.point([
+  //     this.endPoint.basePoint.position.lng,
+  //     this.endPoint.basePoint.position.lat
+  //   ]);
+  //   if (element.type == 'circle') {
+  //     const point = turf.point([
+  //       element.shape.center.lng,
+  //       element.shape.center.lat
+  //     ]);
 
-      const dis = turf.distance(point, endpoint, { units: 'kilometers' });
-      return dis * 1000 < element.shape.r;
-    } else {
-      return turf.booleanPointInPolygon(endpoint, element.shape) as boolean;
-    }
-  }
+  //     const dis = turf.distance(point, endpoint, { units: 'kilometers' });
+  //     return dis * 1000 < element.shape.r;
+  //   } else {
+  //     return turf.booleanPointInPolygon(endpoint, element.shape) as boolean;
+  //   }
+  // }
 
   // public addPoint(point: Trajectorypoint) {
   //   return point;

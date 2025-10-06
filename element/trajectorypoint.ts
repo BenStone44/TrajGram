@@ -2,8 +2,8 @@ import { LngLat } from 'mapbox-gl';
 import { ColorConverter, type colorArray } from '../utils/utils_color';
 import type { Trajectorypoint } from '../interfaces/trajectory';
 import { TrajectoryPointGroup } from '../render-manager/trajectory-point-group';
-import type { GeoElement } from '../interfaces/geo';
-import * as turf from '@turf/turf';
+// import type { GeoElement } from '../interfaces/geo';
+// import * as turf from '@turf/turf';
 
 export type TrajectoryPointRenderStyleFields =
   | 'center'
@@ -125,25 +125,25 @@ export class TrajectoryPointElement {
     this.bufferLength = length;
   }
 
-  public inside(element: GeoElement) {
-    const startpoint = turf.point([
-      this.trajectorypoint.basePoint.position.lng,
-      this.trajectorypoint.basePoint.position.lat
-    ]);
-    if (element.type == 'circle') {
-      const point = turf.point([
-        element.shape.center.lng,
-        element.shape.center.lat
-      ]);
+  // public inside(element: GeoElement) {
+  //   const startpoint = turf.point([
+  //     this.trajectorypoint.basePoint.position.lng,
+  //     this.trajectorypoint.basePoint.position.lat
+  //   ]);
+  //   if (element.type == 'circle') {
+  //     const point = turf.point([
+  //       element.shape.center.lng,
+  //       element.shape.center.lat
+  //     ]);
 
-      const dis = turf.distance(point, startpoint, { units: 'kilometers' });
-      return dis * 1000 < element.shape.r;
-    } else if (element.type == 'polygon') {
-      return turf.booleanPointInPolygon(startpoint, element.shape);
-    } else {
-      return false
-    }
-  }
+  //     const dis = turf.distance(point, startpoint, { units: 'kilometers' });
+  //     return dis * 1000 < element.shape.r;
+  //   } else if (element.type == 'polygon') {
+  //     return turf.booleanPointInPolygon(startpoint, element.shape);
+  //   } else {
+  //     return false
+  //   }
+  // }
   public getColor() {
     return this.color;
   }
