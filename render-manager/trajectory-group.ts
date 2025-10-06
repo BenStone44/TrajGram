@@ -201,23 +201,23 @@ export class TrajectoryGroup {
     return this.elementDict[id];
   }
 
-  public getStartPoint() {
-    const points: Trajectorypoint[] = [];
-    for (const id in this.elementDict) {
-      const trajectory = this.elementDict[id];
-      points.push(trajectory.startPoint);
-    }
-    return points;
-  }
+  // public getStartPoint() {
+  //   const points: Trajectorypoint[] = [];
+  //   for (const id in this.elementDict) {
+  //     const trajectory = this.elementDict[id];
+  //     points.push(trajectory.startPoint);
+  //   }
+  //   return points;
+  // }
 
-  public getEndPoint() {
-    const points: Trajectorypoint[] = [];
-    for (const id in this.elementDict) {
-      const trajectory = this.elementDict[id];
-      points.push(trajectory.endPoint);
-    }
-    return points;
-  }
+  // public getEndPoint() {
+  //   const points: Trajectorypoint[] = [];
+  //   for (const id in this.elementDict) {
+  //     const trajectory = this.elementDict[id];
+  //     points.push(trajectory.endPoint);
+  //   }
+  //   return points;
+  // }
 
   private _createTrajectoryElements(data: Trajectory[]) {
     data.forEach((traj) => {

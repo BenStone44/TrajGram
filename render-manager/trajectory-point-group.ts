@@ -147,7 +147,6 @@ export class TrajectoryPointGroup {
       );
 
       const newid = point.id + '#' + index;
-      // console.log(newid);
       const c = new ColorConverter(newCircle.offColor);
       this.colorMap.set(c.Hex(), newid);
       if (newid in this.elementDict) throw new Error('duplicated id!');
