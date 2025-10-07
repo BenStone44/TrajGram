@@ -2,17 +2,14 @@ import { LngLat } from 'mapbox-gl';
 import { Trajectoolkit } from '../Trajectoolkit';
 import type { Trajectorypoint } from '../interfaces/trajectory';
 import { MarkerSVG } from '../selection/marker';
+import type { MarkerStyleMappingFunction } from '../encoding/annotation_new';
 export type TrajectoryMarkerGroupProps = {
   id: string;
   data: () => Trajectorypoint[];
   maxZoom?: number;
   minZoom?: number;
   widthFollowZoom?: boolean;
-  encodings: {
-    color?: string;
-    opacity?: number;
-    size?: number;
-  };
+  style: MarkerStyleMappingFunction
 };
 export type TrajectoryMarkerElemnet = {
   id: string;
