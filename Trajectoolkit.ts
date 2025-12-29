@@ -610,6 +610,24 @@ export class Trajectoolkit implements IControl {
     for (const value of this._selections.values()) value?.draw();
   }
 
+  private _logRenderTime(duration: number) {
+    const fs = require('fs');
+    const path = require('path');
+    
+    const csvFile = path.join(process.cwd(), 'render_performance.csv');
+    const timestamp = new Date().toISOString();
+    const fps = (1000 / duration).toFixed(1);
+    const csvLine = `${timestamp},${duration.toFixed(2)},${fps}\n`;
+    
+    // 检查文件是否存在，不存在则创建并写入头部
+    if (!fs.existsSync(csvFile)) {
+      const header = "Timestamp,Duration(ms),FPS\n";
+      fs.writeFileSync(csvFile, header);
+    }
+    
+    // 追加数据
+    fs.appendFileSync(csvFile, csvLine);
+  }
   public addEventLisener(
     id: string,
     type: QueryEvent,

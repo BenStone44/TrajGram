@@ -26,7 +26,8 @@ export interface EncodingSettings {
 export type ColorFunction =
   | ((P: Trajectorypoint) => d3.RGBColor)
   | ((T: Trajectory) => d3.RGBColor)
-  | colorArray;
+  | colorArray
+  | string;
 
 export type NumricFunction =
   | ((P: Trajectorypoint) => number)

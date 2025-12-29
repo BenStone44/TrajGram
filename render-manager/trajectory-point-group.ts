@@ -1,6 +1,6 @@
 import mapboxgl, { LngLat } from 'mapbox-gl';
 import { EPSG3857_project, zoom2scale } from '../project';
-
+import * as d3 from 'd3'
 import { createProgram, createArrayBuffer } from './renderer/utils';
 import type { Trajectorypoint } from '../interfaces/trajectory';
 import { ColorConverter, type colorArray } from '../utils/utils_color';
@@ -9,9 +9,9 @@ import {
   type TrajectoryPointRenderBufferFields,
   type CircleRenderStyle
 } from '../element/trajectorypoint';
-// import { DragAction } from '../interaction/drag';
 import { getPixelLength } from '../utils/utils_scale';
 import { Trajectoolkit } from '../Trajectoolkit';
+import type { PointStyleMappingFunction } from '../encoding/annotation';
 
 export type TrajectoryPointRenderInfos = {
   element: Trajectorypoint;
@@ -25,17 +25,12 @@ export type TrajectoryPointGroupProps = {
   minZoom?: number;
   widthFollowZoom?: boolean;
   zIndex?: number;
-  encodings: {
-    color?: colorArray | string;
-    r?: number | string;
-    opacity?: number;
-  };
+  style: PointStyleMappingFunction;
 };
 
 export class TrajectoryPointGroup {
   type = 'point';
   core: Trajectoolkit;
-  // DA: DragAction | null = null;
   program: WebGLProgram;
   props: TrajectoryPointGroupProps;
   buffers: { [key: string]: WebGLBuffer } = {};
@@ -83,8 +78,6 @@ export class TrajectoryPointGroup {
               return zeroToOne;
           }
   
-  
-  
           void main() {
               vec2 aPosition = latlng2pixel(aLngLat, uTranslation, uScale);
               float normalizedZ = uZIndex * 0.001;
@@ -108,7 +101,6 @@ export class TrajectoryPointGroup {
 
   constructor(core: Trajectoolkit, props: TrajectoryPointGroupProps) {
     this.core = core;
-
     this.drawSize = 0;
     this.props = props;
 
@@ -127,32 +119,60 @@ export class TrajectoryPointGroup {
   }
 
   private _createPointElements(data: Trajectorypoint[]) {
-    const colorConverter = new ColorConverter(
-      this.props.encodings.color || '#000000'
-    );
-    const opacity = this.props.encodings.opacity || 1;
-    const array = colorConverter.Array();
-    array[3] = opacity;
-    data.forEach((point, index) => {
-      const newCircle = new TrajectoryPointElement(
-        {
-          source: point,
-          style: {
-            r: this.props.encodings.r as number,
-            fill: array
-          }
-        },
-        this.program,
-        this
-      );
+      const defaultValues = {
+        color: '#000000',
+        opacity: 1,
+        radius: 5
+      };
 
-      const newid = point.id + '#' + index;
-      const c = new ColorConverter(newCircle.offColor);
-      this.colorMap.set(c.Hex(), newid);
-      if (newid in this.elementDict) throw new Error('duplicated id!');
-      this.elementDict[newid] = newCircle;
-    });
-  }
+      data.forEach((point, index) => {
+        // 使用映射函数计算颜色
+        let color: d3.RGBColor;
+        if (this.props.style.color?.type === 'static') {
+          color = d3.rgb(this.props.style.color.value as string || defaultValues.color);
+        } else if (this.props.style.color?.type === 'linear') {
+          color = (this.props.style.color.value as (P: Trajectorypoint) => d3.RGBColor)(point);
+        } else {
+          color = d3.rgb(defaultValues.color);
+        }
+
+        // 使用映射函数计算透明度
+        const opacity = this.props.style.opacity?.type === 'static'
+          ? this.props.style.opacity.value as number
+          : this.props.style.opacity?.type === 'linear'
+          ? (this.props.style.opacity.value as (P: Trajectorypoint) => number)(point)
+          : defaultValues.opacity;
+
+        // 使用映射函数计算半径
+        const radius = this.props.style.r?.type === 'static'
+          ? Number(this.props.style.r.value)
+          : this.props.style.r?.type === 'linear'
+          ? (this.props.style.r.value as (P: Trajectorypoint) => number)(point)
+          : defaultValues.radius;
+
+        const colorConverter = new ColorConverter(color);
+        const array = colorConverter.Array();
+        array[3] = opacity;
+
+        const newCircle = new TrajectoryPointElement(
+          {
+            source: point,
+            style: {
+              r: radius,
+              fill: array
+            }
+          },
+          this.program,
+          this
+        );
+
+        const newid = point.id + '#' + index;
+        const c = new ColorConverter(newCircle.offColor);
+        this.colorMap.set(c.Hex(), newid);
+        if (newid in this.elementDict) throw new Error('duplicated id!');
+        this.elementDict[newid] = newCircle;
+      });
+    }
 
   pick(point: mapboxgl.Point) {
     const gl = this.core.pointRendering.gl;
@@ -197,7 +217,6 @@ export class TrajectoryPointGroup {
 
   private _createArrayBuffers() {
     const verticesArray: number[][] = [];
-
     const colorArray: colorArray[] = [];
     const offScreenColorArray: colorArray[] = [];
     const distance: number[] = [];
@@ -214,7 +233,7 @@ export class TrajectoryPointGroup {
       const strokeWidth = point.strokeWidth();
       const r = point.r();
       const color = point.fill();
-      //console.log('color', color);
+
       if (strokeWidth) {
         console.log('yes');
       }
