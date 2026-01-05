@@ -26,7 +26,7 @@ export type filterFunc = (elememt: Trajectory) => boolean;
 
 export class Query {
   id: string;
-  source: () => Trajectory[];
+  source: () => Promise<Trajectory[]>;
   type: string;
   match: (element: Trajectory) => boolean = () => false;
   condition = new Map<string, filterFunc>();
@@ -37,7 +37,7 @@ export class Query {
     this.core = core;
     this.id = specification.id;
     this.source = () =>
-      core.getDQSDatabyID(specification.source) as any;
+      core.getDQSDatabyID(specification.source);
     core.getDQSbyID(specification.source)?.children.push(this);
     this.type = specification.type;
     //如果是filter，才会有condition
@@ -64,14 +64,15 @@ export class Query {
     }
   }
 
-  public setSourceFunction(sourceFunc: () => Trajectory[]) {
+  public setSourceFunction(sourceFunc: () => Promise<Trajectory[]>) {
     this.source = sourceFunc;
     this.update();
   }
 
-  public evenSplit(type: string, segnum: number) {
+  public async evenSplit(type: string, segnum: number) {
     const Rs = Array.from({ length: segnum + 1 }, (_, index) => index / segnum);
-    const subTrajectories = this.source().flatMap(
+    const data  = await this.source()
+    const subTrajectories = data.flatMap(
       (T: Trajectory, index: number) =>
         splitTrajectory(
           T,
@@ -133,8 +134,8 @@ export class Query {
     this.update();
   }
 
-  public segmentationByRoadID() {
-    const data = this.source();
+  public async segmentationByRoadID() {
+    const data = await this.source();
     const trawithSameID: Trajectory[] = [];
     data.forEach((pertra: Trajectory) => {
       const shapingPoints = pertra.shapingPoints;
@@ -190,9 +191,9 @@ export class Query {
     return trawithSameID;
   }
 
-  public aggregationByRoadID() {
+  public async aggregationByRoadID() {
     // const configStore = useConfigStore();
-    const data = this.source();
+    const data = await this.source();
     const stageNewRoadnetwork: any[] = [];
     const formedNewRoadnetwork: RoadNetworkItem[] = [];
     const roadnetworkData = this.core.getDQSDatabyID(
@@ -271,16 +272,17 @@ export class Query {
     return formedNewRoadnetwork;
   }
 
-  public queryResult() {
+  public async queryResult() {
     let filterResult: (Trajectory | Trajectorypoint | RoadNetworkItem)[] = [];
-    const data = this.source();
+    const data = await this.source();
+
     if (this.type == 'filter') {
       filterResult = data.filter((e) => this.match(e));
     } else if (this.type == 'segmentation') {
       console.log('segmentation');
-      filterResult = this.segmentationByRoadID();
+      filterResult = await this.segmentationByRoadID();
     } else if (this.type == 'aggregation') {
-      filterResult = this.aggregationByRoadID();
+      filterResult = await this.aggregationByRoadID();
       console.log('aggregation');
     } else {
       console.log('other type');
