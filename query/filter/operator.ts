@@ -1,6 +1,6 @@
 import { Trajectoolkit } from '../../Trajectoolkit';
 import type { Trajectory, Trajectorypoint } from '../../interfaces/trajectory';
-import { LensSVG } from '../../selection/lens_svg';
+import { LensSVG } from '../../selection/lens/lens_svg';
 import type { Query } from '../query';
 import type { FilterCondition, QueryPredicate } from '../types';
 

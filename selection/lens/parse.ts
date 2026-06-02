@@ -1,7 +1,7 @@
 import { LngLat } from 'mapbox-gl';
 import { Trajectoolkit } from '../Trajectoolkit';
 import { type LensInfo} from './lens_svg';
-import { getPixelLength } from '../utils/utils_scale';
+import { getPixelLength } from '../../utils/utils_scale';
 
 export const randomComponentPosition = (TKT: Trajectoolkit) => {
   const cnum = TKT.getLensNum();

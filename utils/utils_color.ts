@@ -1,6 +1,6 @@
 import * as d3 from 'd3';
 import { numberTransformScale } from './utils_scale';
-import { parseColor } from '../parseString/regex';
+import { parseColor } from '../parser/regex';
 
 export type colorArray = [number, number, number, number];
 export type RGB = { r: number; g: number; b: number };

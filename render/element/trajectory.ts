@@ -1,16 +1,16 @@
-import { TrajectoryGroup } from '../render-manager/trajectory-group';
+import { TrajectoryGroup } from '../trajectory-group';
 // import pointToLineDistance from '@turf/point-to-line-distance';
 import type {
   AnnotationSubtrajectory,
   Trajectory,
   Trajectorypoint
-} from '../interfaces/trajectory';
+} from '../../interfaces/trajectory';
 import * as turf from '@turf/turf';
 import type { Feature, LineString } from 'geojson';
 
 import type { CircleRenderStyle } from './trajectorypoint';
 // import type { GeoElement } from '../interfaces/geo';
-import { ColorConverter } from '../utils/utils_color';
+import { ColorConverter } from '../../utils/utils_color';
 export type bufferType = 'color' | 'vertices' | 'width' | 'undefined';
 export type pointInfoType =
   | 'time'

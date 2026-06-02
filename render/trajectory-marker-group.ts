@@ -1,7 +1,7 @@
 import { LngLat } from 'mapbox-gl';
 import { Trajectoolkit } from '../Trajectoolkit';
 import type { Trajectorypoint } from '../interfaces/trajectory';
-import { MarkerSVG } from '../selection/marker';
+import { MarkerSVG } from '../selection/svg/marker';
 import type { MarkerStyleMappingFunction } from '../encoding/annotation';
 import { ColorConverter, type ColorInput } from '../utils/utils_color';
 

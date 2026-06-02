@@ -3,13 +3,13 @@ import {
   type bufferType,
   type pointRenderInfo,
   type styleType
-} from '../element/trajectory';
+} from './element/trajectory';
 
 import { EPSG3857_project, zoom2scale } from '../project';
 import {
   createProgram,
   createArrayBuffer
-} from '../render-manager/renderer/utils';
+} from './renderer/utils';
 import type { Trajectory, Trajectorypoint } from '../interfaces/trajectory';
 import { ColorConverter, type ColorInput } from '../utils/utils_color';
 import { Trajectoolkit } from '../Trajectoolkit';

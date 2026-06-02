@@ -1,6 +1,6 @@
-import { LngLat } from 'mapbox-gl';
-import { Trajectoolkit } from '../Trajectoolkit';
-import * as d3 from 'd3';
+import { LngLat } from "mapbox-gl";
+import { Trajectoolkit } from "../../Trajectoolkit";
+import * as d3 from "d3";
 export type TextInfo = {
   point: LngLat;
   color: string;
@@ -23,11 +23,11 @@ export class TextSVG {
   constructor(core: Trajectoolkit, data: TextInfo) {
     this.core = core;
     if (!core.AnnotationsSVG || !core.map)
-      throw new Error('TKT not initialized');
+      throw new Error("TKT not initialized");
     this.container = core.AnnotationsSVG;
     this._map = core.map;
     this.center = data.point;
-    this.g = d3.select(this.container).append('g');
+    this.g = d3.select(this.container).append("g");
 
     this.data = data;
     this.coordinates = this._calculateCoordinates();
@@ -40,7 +40,7 @@ export class TextSVG {
 
     return {
       x: rp.x,
-      y: rp.y
+      y: rp.y,
     };
   }
   public parseTransform() {
@@ -64,29 +64,28 @@ export class TextSVG {
   }
 
   public draw() {
-
     const x = this.coordinates.x;
     const y = this.coordinates.y;
 
     this.remove();
     const transform = this.parseTransform();
 
-    this.g = d3.select(this.container).append('g');
+    this.g = d3.select(this.container).append("g");
     const rect = this.g
       //.attr('transform', ` translate(${x - rectWidth / 2},${y - rectHeight})`)
       // .attr('transform-origin', `${x}px ${y}px`)
-      .text('text')
-      .append('rect')
-      .attr('fill', this.data.color || 'lightblue')
-      .attr('rx', 3)
-      .attr('opacity', 0.9);
+      .text("text")
+      .append("rect")
+      .attr("fill", this.data.color || "lightblue")
+      .attr("rx", 3)
+      .attr("opacity", 0.9);
     const text = this.g
-      .append('text')
+      .append("text")
       .text(this.data.text)
-      .attr('text-anchor', 'middle')
-      .attr('alignment-baseline', 'middle')
-      .attr('fill', 'white')
-      .attr('font-size', '${this.data.font_size}px');
+      .attr("text-anchor", "middle")
+      .attr("alignment-baseline", "middle")
+      .attr("fill", "white")
+      .attr("font-size", "${this.data.font_size}px");
     const textElement = text.node();
     if (textElement) {
       const b = textElement.getBBox();
@@ -94,20 +93,20 @@ export class TextSVG {
       const height = b.height;
       //获取text
       text.attr(
-        'transform',
-        `rotate(${this.data.rotate} ${x} ${y}) translate(${transform.x},${transform.y})`
+        "transform",
+        `rotate(${this.data.rotate} ${x} ${y}) translate(${transform.x},${transform.y})`,
       );
       rect
-        .attr('width', width + 20)
-        .attr('height', height + 10)
+        .attr("width", width + 20)
+        .attr("height", height + 10)
         .attr(
-          'transform',
+          "transform",
           `rotate(${this.data.rotate} ${x} ${y}) translate(${
             transform.x - (width + 20) / 2
-          },${transform.y - (height + 10) / 2}) `
+          },${transform.y - (height + 10) / 2}) `,
         );
     } else {
-      console.error('Text element is null or undefined.');
+      console.error("Text element is null or undefined.");
     }
   }
   public remove() {

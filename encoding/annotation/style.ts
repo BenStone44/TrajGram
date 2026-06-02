@@ -1,14 +1,14 @@
 import type { Trajectory, Trajectorypoint } from '../../interfaces/trajectory';
 import {
   TrajectoryMarkerGroupProps
-} from '../../render-manager/trajectory-marker-group';
+} from '../../render/trajectory-marker-group';
 import {
   TrajectoryPointGroupProps
-} from '../../render-manager/trajectory-point-group';
+} from '../../render/trajectory-point-group';
 import {
   TrajectoryTextGroupProps
-} from '../../render-manager/trajectory-text-group';
-import { parseColorString, parseNumberString } from '../../parseString/regex';
+} from '../../render/trajectory-text-group';
+import { parseColorString, parseNumberString } from '../../parser/regex';
 import type {
   AnnotationSettings,
   MarkerStyle,

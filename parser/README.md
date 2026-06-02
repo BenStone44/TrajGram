@@ -1,4 +1,4 @@
-# `parseString/`
+# `parser/`
 
 这个目录负责 TrajGram 的样式表达式解析。
 
@@ -6,7 +6,7 @@
 
 核心文件：
 
-- [regex.ts](/F:/TrajGram/TrajGram/parseString/regex.ts:1)
+- [regex.ts](/F:/TrajGram/TrajGram/parser/regex.ts:1)
 
 ## 支持的表达式
 
@@ -80,7 +80,7 @@
 当前主要被以下模块使用：
 
 - [encoding/encoding.ts](/F:/TrajGram/TrajGram/encoding/encoding.ts:1)
-- [encoding/annotation.ts](/F:/TrajGram/TrajGram/encoding/annotation.ts:1)
+- [encoding/annotation/runtime.ts](/F:/TrajGram/TrajGram/encoding/annotation/runtime.ts:1)
 
 ## 当前限制
 

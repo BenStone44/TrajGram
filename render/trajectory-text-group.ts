@@ -1,8 +1,8 @@
 import { LngLat } from 'mapbox-gl';
 import { Trajectoolkit } from '../Trajectoolkit';
 import type { Trajectory, Trajectorypoint } from '../interfaces/trajectory';
-import { TextSVG } from '../selection/text';
-// import { parseAttributeEither } from '../parseString/regex';
+import { TextSVG } from '../selection/svg/text';
+// import { parseAttributeEither } from '../parser/regex';
 import type { TextStyleMappingFunction } from '../encoding/annotation';
 
 export type TrajectoryTextGroupProps = {

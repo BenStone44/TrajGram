@@ -1,10 +1,10 @@
 import { type RelationTreeNode, Trajectoolkit } from '../Trajectoolkit';
-import { parseLensInfo } from './parse';
-import { TrajectoryElement } from '../element/trajectory';
-import { TrajectoryPointElement } from '../element/trajectorypoint';
-import { drawArea } from './area';
-import { LensSVG } from './lens_svg';
-import { type MouseEventType, MouseSelection } from './mouse';
+import { parseLensInfo } from './lens/parse';
+import { TrajectoryElement } from '../render/element/trajectory';
+import { TrajectoryPointElement } from '../render/element/trajectorypoint';
+import { drawArea } from './lens/area';
+import { LensSVG } from './lens/lens_svg';
+import { type MouseEventType, MouseSelection } from './mouse/mouse';
 
 export type SelectionType =
   | 'mouse.hover'

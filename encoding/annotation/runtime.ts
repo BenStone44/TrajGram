@@ -2,13 +2,13 @@ import { Trajectoolkit } from '../../Trajectoolkit';
 import type { Trajectory, Trajectorypoint } from '../../interfaces/trajectory';
 import {
   TrajectoryMarkerGroup
-} from '../../render-manager/trajectory-marker-group';
+} from '../../render/trajectory-marker-group';
 import {
   TrajectoryPointGroup
-} from '../../render-manager/trajectory-point-group';
+} from '../../render/trajectory-point-group';
 import {
   TrajectoryTextGroup
-} from '../../render-manager/trajectory-text-group';
+} from '../../render/trajectory-text-group';
 import { positionParse } from '../position';
 import type {
   AnnotationSettings,

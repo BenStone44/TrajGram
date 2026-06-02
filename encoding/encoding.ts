@@ -1,5 +1,5 @@
 import type { Trajectory } from '../interfaces/trajectory';
-import { type TrajectoryGroup } from '../render-manager/trajectory-group';
+import { type TrajectoryGroup } from '../render/trajectory-group';
 import { Trajectoolkit } from '../Trajectoolkit';
 import { Annotation } from './annotation';
 import { createEncodingStyleMapping, createTrajectoryGroupProps, isEncodingStyleKey } from './style';

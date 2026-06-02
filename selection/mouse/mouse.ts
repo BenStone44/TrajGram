@@ -1,7 +1,7 @@
 import mapboxgl from 'mapbox-gl';
 import { Trajectoolkit } from '../Trajectoolkit';
-import { TrajectoryElement } from '../element/trajectory';
-import { TrajectoryPointElement } from '../element/trajectorypoint';
+import { TrajectoryElement } from '../render/element/trajectory';
+import { TrajectoryPointElement } from '../render/element/trajectorypoint';
 import type { Trajectory, Trajectorypoint } from '../interfaces/trajectory';
 import type { RoadNetworkItem } from '../interfaces/road-network';
 

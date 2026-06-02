@@ -6,28 +6,28 @@ import { Map as MapboxMap, type IControl } from 'mapbox-gl';
 import {
   TrajectoryGroup,
   type TrajectoryGroupProps
-} from './render-manager/trajectory-group';
+} from './render/trajectory-group';
 
 import * as d3 from 'd3';
 
 import {
   TrajectoryPointGroup,
   type TrajectoryPointGroupProps
-} from './render-manager/trajectory-point-group';
+} from './render/trajectory-point-group';
 import { Query, type QuerySetting } from './query/query';
 import { Selection, type SelectionProps } from './selection/selection';
-import { Data, type DataProps } from './data-management/data';
-import type { DataSetting } from './data-management/types';
+import { Data, type DataProps } from './data/data';
+import type { DataSetting } from './data/types';
 import { Encoding, type EncodingSettings } from './encoding/encoding';
 import {
   TrajectoryMarkerGroup,
   type TrajectoryMarkerGroupProps
-} from './render-manager/trajectory-marker-group';
+} from './render/trajectory-marker-group';
 import {
   TrajectoryTextGroup,
   type TrajectoryTextGroupProps
-} from './render-manager/trajectory-text-group';
-import type { MouseSelection } from './selection/mouse';
+} from './render/trajectory-text-group';
+import type { MouseSelection } from './selection/mouse/mouse';
 /**
  * Implements Mapbox [IControl](https://docs.mapbox.com/mapbox-gl-js/api/markers/#icontrol) interface
  */

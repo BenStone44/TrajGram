@@ -1,7 +1,7 @@
 import { LngLat } from 'mapbox-gl';
-import { ColorConverter, type colorArray } from '../utils/utils_color';
-import type { Trajectorypoint } from '../interfaces/trajectory';
-import { TrajectoryPointGroup } from '../render-manager/trajectory-point-group';
+import { ColorConverter, type colorArray } from '../../utils/utils_color';
+import type { Trajectorypoint } from '../../interfaces/trajectory';
+import { TrajectoryPointGroup } from '../trajectory-point-group';
 // import type { GeoElement } from '../interfaces/geo';
 // import * as turf from '@turf/turf';
 

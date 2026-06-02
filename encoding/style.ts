@@ -1,6 +1,6 @@
 import type { Trajectory } from '../interfaces/trajectory';
-import type { TrajectoryGroupProps } from '../render-manager/trajectory-group';
-import { parseColorString, parseNumberString } from '../parseString/regex';
+import type { TrajectoryGroupProps } from '../render/trajectory-group';
+import { parseColorString, parseNumberString } from '../parser/regex';
 import type {
   EncodingSettings,
   EncodingStyleKey,

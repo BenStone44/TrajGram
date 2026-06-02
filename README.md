@@ -15,13 +15,13 @@ Trajectoolkit 是一个面向轨迹可视分析的前端库，基于 Mapbox GL +
 ## 目录结构
 
 - `Trajectoolkit.ts`：主入口类（Mapbox 控件）。
-- `data-management/`：数据节点与更新传播。
+- `data/`：数据节点与更新传播。
 - `selection/`：交互选择（镜头、鼠标等）。
 - `query/`：过滤、分段、聚合查询。
 - `encoding/`：轨迹样式与标注映射。
-- `render-manager/`：WebGL/SVG 渲染组。
+- `render/`：WebGL/SVG 渲染组。
 - `interfaces/`：轨迹与路网数据结构定义。
-- `parseString/`：样式字符串解析器。
+- `parser/`：样式字符串解析器。
 
 ## 依赖
 

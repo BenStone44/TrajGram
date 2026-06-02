@@ -1,11 +1,11 @@
 import { LngLat } from 'mapbox-gl';
 import * as d3 from 'd3';
 import { DragLensAction } from './draglens';
-import { getPixelLength } from '../utils/utils_scale';
+import { getPixelLength } from '../../utils/utils_scale';
 import type { GeoElement } from '../interfaces/geo';
 import * as turf from '@turf/turf';
-import { TrajectoryPointElement } from '../element/trajectorypoint';
-import { TrajectoryElement } from '../element/trajectory';
+import { TrajectoryPointElement } from '../render/element/trajectorypoint';
+import { TrajectoryElement } from '../render/element/trajectory';
 import pointToLineDistance from '@turf/point-to-line-distance';
 import { Trajectoolkit } from '../Trajectoolkit';
 import type { Trajectory, Trajectorypoint } from '../interfaces/trajectory';

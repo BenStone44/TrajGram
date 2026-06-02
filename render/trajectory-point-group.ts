@@ -8,7 +8,7 @@ import {
   TrajectoryPointElement,
   type TrajectoryPointRenderBufferFields,
   type CircleRenderStyle
-} from '../element/trajectorypoint';
+} from './element/trajectorypoint';
 import { getPixelLength } from '../utils/utils_scale';
 import { Trajectoolkit } from '../Trajectoolkit';
 import type { PointStyleMappingFunction } from '../encoding/annotation';
