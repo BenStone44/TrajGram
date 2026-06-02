@@ -1,285 +1,435 @@
+/**
+ * Style expression parser for TrajGram.
+ *
+ * This module turns JSON style strings into runtime mapping functions.
+ *
+ * Supported forms:
+ *
+ * Static values
+ * - "#d9dff1"
+ * - "red"
+ * - 3
+ * - 0.8
+ *
+ * Point-based gradient expressions
+ * - "gradient($P.speed, [#b35a00, #d6d632])"
+ * - "gradient($P.speed, [30, 50], [#b35a00, #d6d632])"
+ * - "gradient($P.speed, [0, 10, 20], [2, 6, 12])"
+ *
+ * Trajectory-based linear expressions
+ * - "linear(speed($T), [#2c7bb6, #ffffbf, #d7191c])"
+ * - "linear(speed($T), [0, 5, 12], [0, 35, 40])"
+ * - "linear(distance($T), [0, 5, 10], [2, 6, 10])"
+ *
+ * Attribute sources:
+ * - $P.xxx reads from point.attributes.others.xxx
+ * - $T.xxx reads from trajectory.attributes.xxx
+ * - speed($T), distance($T), time($T) are built-in trajectory functions
+ */
 import Color from 'color';
+import * as d3 from 'd3';
 import type { Trajectory, Trajectorypoint } from '../interfaces/trajectory';
 import { speed, time } from '../utils/utils_calculation';
-
-import * as d3 from 'd3';
 import { numberTransformScale } from '../utils/utils_scale';
 
-// #ada123
-// #ADA123
-const color16 = /#([a-fA-F0-9]{6})$/;
-const colorname = /^[A-Za-z]+$/;
-const gradientRegex = /^gradient\((.*)\)$/;
-const linearRegex = /^linear\((.*)\)$/;
+export type PointColorAccessor = (point: Trajectorypoint) => d3.RGBColor;
+export type TrajectoryColorAccessor = (
+  trajectory: Trajectory
+) => d3.RGBColor;
+export type PointNumericAccessor = (point: Trajectorypoint) => number;
+export type TrajectoryNumericAccessor = (trajectory: Trajectory) => number;
 
-// 匹配 $P.something 格式
-const PRegex = /^\$P\.[\w.]+/;
-// 匹配 $T.something 格式
-const TRegex = /^\$T\.[\w.]+/;
+export type ParsedColorMapping =
+  | { type: 'static'; value: string }
+  | { type: 'gradient'; value: PointColorAccessor }
+  | { type: 'linear'; value: TrajectoryColorAccessor };
 
-// speed($T) distance($P)
-const magicRegex = /([a-zA-Z_]\w*)\(\$T\)/;
+export type ParsedNumericMapping =
+  | { type: 'static'; value: number }
+  | { type: 'gradient'; value: PointNumericAccessor }
+  | { type: 'linear'; value: TrajectoryNumericAccessor };
 
-const listRegex = /\[([^\]]*)\]/;
+type ParsedList =
+  | { type: 'color'; values: string[] }
+  | { type: 'number'; values: number[] };
 
-export const extractList = (str: string) => {
-  if (str.match(listRegex)) {
-    const vs = str.substring(1, str.length - 1).split(',');
+type OutputKind = 'color' | 'number';
+type GradientMappingFunction = PointColorAccessor | PointNumericAccessor;
+type LinearMappingFunction =
+  | TrajectoryColorAccessor
+  | TrajectoryNumericAccessor;
 
-    const tryColor = vs.map((v) => parseColor(v.trim()));
-    if (tryColor.every((v) => typeof v == 'string'))
-      return { type: 'color', values: tryColor as string[] };
+const HEX_COLOR_REGEX = /#([a-fA-F0-9]{6})$/;
+const NAMED_COLOR_REGEX = /^[A-Za-z]+$/;
+const NUMERIC_LITERAL_REGEX = /^-?\d+(\.\d+)?$/;
+const GRADIENT_REGEX = /^gradient\((.*)\)$/;
+const LINEAR_REGEX = /^linear\((.*)\)$/;
+const POINT_ATTRIBUTE_REGEX = /^\$P\.[\w.]+$/;
+const TRAJECTORY_ATTRIBUTE_REGEX = /^\$T\.[\w.]+$/;
+const MAGIC_TRAJECTORY_FUNCTION_REGEX = /^[a-zA-Z_]\w*\(\$T\)$/;
+const LIST_REGEX = /^\[[^\]]*\]$/;
 
-    const tryNumber = vs.map((v) => parseFloat(v));
-    if (tryNumber.every((v) => typeof v == 'number'))
-      return { type: 'number', values: tryNumber };
+const DEFAULT_POINT_INPUT_RANGE: [number, number] = [0, 30];
+const DEFAULT_TRAJECTORY_COLOR_RANGE: [number, number] = [0, 150];
+const DEFAULT_TRAJECTORY_NUMBER_RANGE: [number, number] = [0, 30];
+
+const TRAJECTORY_MAGIC_ACCESSORS: Record<
+  string,
+  (trajectory: Trajectory) => number
+> = {
+  'speed($T)': (trajectory) => speed(trajectory),
+  'distance($T)': (trajectory) => trajectory.distance,
+  'time($T)': (trajectory) => time(trajectory)
+};
+
+const splitArguments = (params: string) => {
+  const args: string[] = [];
+  let balance = 0;
+  let start = 0;
+
+  for (let i = 0; i < params.length; i++) {
+    const char = params[i];
+    if (char === '[') balance++;
+    if (char === ']') balance--;
+    if (char === ',' && balance === 0) {
+      args.push(params.slice(start, i).trim());
+      start = i + 1;
+    }
   }
 
-  throw new Error('not a valid list!');
+  args.push(params.slice(start).trim());
+  return args;
 };
 
+const getByPath = (source: unknown, path: string) => {
+  if (!source) return undefined;
+  return path.split('.').reduce<unknown>((current, key) => {
+    if (current == null || typeof current !== 'object') {
+      return undefined;
+    }
+    return (current as Record<string, unknown>)[key];
+  }, source);
+};
+
+const toFiniteNumber = (value: unknown, context: string) => {
+  const numericValue =
+    typeof value === 'number' ? value : Number(value as string | number);
+  if (!Number.isFinite(numericValue)) {
+    throw new Error(`${context} must resolve to a finite number.`);
+  }
+  return numericValue;
+};
+
+const ensureOutputKind = (
+  actual: OutputKind,
+  expected: OutputKind | undefined,
+  expression: string
+) => {
+  if (expected && actual !== expected) {
+    throw new Error(
+      `Expression "${expression}" resolves to ${actual}, but ${expected} was expected.`
+    );
+  }
+};
+
+export const extractList = (str: string): ParsedList => {
+  const trimmed = str.trim();
+  if (!trimmed.match(LIST_REGEX)) {
+    throw new Error(`Invalid list literal: ${str}`);
+  }
+
+  const values = trimmed.substring(1, trimmed.length - 1).split(',');
+  const parsedColors = values.map((value) => parseColor(value.trim()));
+  if (parsedColors.every((value) => typeof value === 'string')) {
+    return { type: 'color', values: parsedColors as string[] };
+  }
+
+  const parsedNumbers = values.map((value) => Number(value.trim()));
+  if (parsedNumbers.every((value) => Number.isFinite(value))) {
+    return { type: 'number', values: parsedNumbers };
+  }
+
+  throw new Error(`Invalid list literal: ${str}`);
+};
 
 export const parseTAttribute = (str: string) => {
-  if (str.match(magicRegex)) {
-    if (str === 'speed($T)') return (T: Trajectory) => speed(T);
-    else if (str === 'distance($T)') return (T: Trajectory) => T.distance;
-    else if (str === 'time($T)') return (T: Trajectory) => time(T);
-    else throw new Error('magic function not yet suported!');
-  } else if (str.match(TRegex)) {
-    const key = str.substring(3);
+  const trimmed = str.trim();
+  if (trimmed in TRAJECTORY_MAGIC_ACCESSORS) {
+    return TRAJECTORY_MAGIC_ACCESSORS[trimmed];
+  }
 
-    return (T: Trajectory) => {
-      if (T) {
-        return T.attributes ? T.attributes[key] : undefined;
-      } else throw new Error('NOT T');
-    };
-  } else throw new Error('attribute not valid!');
+  if (trimmed.match(TRAJECTORY_ATTRIBUTE_REGEX)) {
+    const path = trimmed.substring(3);
+    return (trajectory: Trajectory) => getByPath(trajectory.attributes, path);
+  }
+
+  if (trimmed.match(MAGIC_TRAJECTORY_FUNCTION_REGEX)) {
+    throw new Error(`Unsupported trajectory function: ${trimmed}`);
+  }
+
+  throw new Error(`Invalid trajectory attribute expression: ${str}`);
 };
 
-
-
 export const parsePAttribute = (str: string) => {
-  if (str.match(PRegex)) {
-    const key = str.substring(3);
-    return (P: Trajectorypoint) =>
-      P.attributes.others ? P.attributes.others[key] : undefined;
-  } else throw new Error('attribute not valid!');
+  const trimmed = str.trim();
+  if (!trimmed.match(POINT_ATTRIBUTE_REGEX)) {
+    throw new Error(`Invalid point attribute expression: ${str}`);
+  }
+
+  const path = trimmed.substring(3);
+  return (point: Trajectorypoint) => getByPath(point.attributes.others, path);
 };
 
 export const parseAttributeEither = (str: string) => {
-  if (str.match(magicRegex) || str.match(TRegex)) {
-    return { type: 't', value: parseTAttribute(str) };
-  } else if (str.match(PRegex)) {
-    return { type: 'p', value: parsePAttribute(str) };
-  } else return { type: 's', value: str };
+  const trimmed = str.trim();
+  if (
+    trimmed.match(MAGIC_TRAJECTORY_FUNCTION_REGEX) ||
+    trimmed.match(TRAJECTORY_ATTRIBUTE_REGEX)
+  ) {
+    return { type: 't', value: parseTAttribute(trimmed) };
+  }
+
+  if (trimmed.match(POINT_ATTRIBUTE_REGEX)) {
+    return { type: 'p', value: parsePAttribute(trimmed) };
+  }
+
+  return { type: 's', value: str };
 };
 
 export const parseColor = (str: string) => {
-  if (str.match(colorname)) {
-    const color = Color(str);
-    return color.hex();
-  } else if (str.match(color16)) {
-    return str;
-  } else return null;
+  const trimmed = str.trim();
+  if (trimmed.match(HEX_COLOR_REGEX)) {
+    return trimmed;
+  }
+
+  if (!trimmed.match(NAMED_COLOR_REGEX)) {
+    return null;
+  }
+
+  try {
+    return Color(trimmed).hex();
+  } catch {
+    return null;
+  }
 };
 
-export const parseGradientParameters = (str: string) => {
+const parseStaticNumber = (value: string) => {
+  const trimmed = value.trim();
+  if (!trimmed.match(NUMERIC_LITERAL_REGEX)) {
+    return null;
+  }
 
-  const match = str.match(gradientRegex);
+  const numericValue = Number(trimmed);
+  return Number.isFinite(numericValue) ? numericValue : null;
+};
 
-  if (match) {
-    // 获取参数部分
-    const params = match[1];
-    // 分割参数，考虑到括号内的逗号
-    const args = [];
-    let balance = 0; // 用来跟踪括号平衡
-    let start = 0;
+const buildColorInterpolator = (colors: string[]) =>
+  d3.interpolateRgbBasis(colors);
 
-    for (let i = 0; i < params.length; i++) {
-      const char = params[i];
-      if (char === '[') balance++;
-      if (char === ']') balance--;
-      // 如果找到逗号且当前不在括号内，则分割
-      if (char === ',' && balance === 0) {
-        args.push(params.slice(start, i).trim());
-        start = i + 1;
-      }
-    }
-    // 添加最后一个参数
-    args.push(params.slice(start).trim());
+const parseGradientExpression = (
+  str: string,
+  expectedOutputKind?: OutputKind
+): GradientMappingFunction | null => {
+  const match = str.trim().match(GRADIENT_REGEX);
+  if (!match) return null;
 
-    if (args.length == 2) {
-      // "gradient($P.speed, [#b35a00, #d6d632])"
-      // $P.speed, [#b35a00, #d6d632]
+  const args = splitArguments(match[1]);
+  if (args.length !== 2 && args.length !== 3) {
+    throw new Error(`Invalid gradient expression: ${str}`);
+  }
 
-      const attributeFunc = parsePAttribute(args[0]);
-      const valuelist = extractList(args[1]);
-      const scale = d3.scaleLinear().domain([0, 30]).range([0, 1]);
-      if (valuelist.type == 'color') {
-        return (P: Trajectorypoint) => {
-          const colorInterpolator = d3.interpolateRgbBasis(
-            valuelist.values as string[]
-          );
-          return d3.rgb(colorInterpolator(scale(attributeFunc(P) as number)));
-        };
-      } else {
-        return (P: Trajectorypoint) =>
-          numberTransformScale(
-            attributeFunc(P) as number,
-            [0, 30],
-            valuelist.values as number[]
-          );
-      }
-    } else if (args.length == 3) {
-      // "gradient($P.speed, [0, 30], [#b35a00, #d6d632])"
-      const attributeFunc = parsePAttribute(args[0]);
-      const indexlist = extractList(args[1]);
-      const valuelist = extractList(args[2]);
+  const attributeFunc = parsePAttribute(args[0]);
+
+  if (args.length === 2) {
+    const valueList = extractList(args[1]);
+    ensureOutputKind(valueList.type, expectedOutputKind, str);
+
+    if (valueList.type === 'color') {
       const scale = d3
         .scaleLinear()
-        .domain(indexlist.values as number[])
-        .range([0, 1]);
-      if (indexlist.type == 'number') {
-        if (valuelist.type == 'color') {
-          return (P: Trajectorypoint) => {
-            const colorInterpolator = d3.interpolateRgbBasis(
-              valuelist.values as string[]
-            );
-
-            return d3.rgb(colorInterpolator(scale(attributeFunc(P) as number)));
-          };
-        } else {
-          return (P: Trajectorypoint) =>
-            numberTransformScale(
-              attributeFunc(P) as number,
-              indexlist.values as number[],
-              valuelist.values as number[]
-            );
-        }
-      }
+        .domain(DEFAULT_POINT_INPUT_RANGE)
+        .range([0, 1])
+        .clamp(true);
+      const colorInterpolator = buildColorInterpolator(valueList.values);
+      return (point: Trajectorypoint) =>
+        d3.rgb(
+          colorInterpolator(scale(toFiniteNumber(attributeFunc(point), args[0])))
+        );
     }
 
-    return null;
-  } else {
-    return null;
+    return (point: Trajectorypoint) =>
+      numberTransformScale(
+        toFiniteNumber(attributeFunc(point), args[0]),
+        DEFAULT_POINT_INPUT_RANGE,
+        valueList.values
+      );
   }
+
+  const domainList = extractList(args[1]);
+  const valueList = extractList(args[2]);
+  if (domainList.type !== 'number') {
+    throw new Error(`Gradient domain must be numeric: ${args[1]}`);
+  }
+
+  ensureOutputKind(valueList.type, expectedOutputKind, str);
+
+  if (valueList.type === 'color') {
+    const scale = d3
+      .scaleLinear()
+      .domain(domainList.values)
+      .range([0, 1])
+      .clamp(true);
+    const colorInterpolator = buildColorInterpolator(valueList.values);
+    return (point: Trajectorypoint) =>
+      d3.rgb(
+        colorInterpolator(scale(toFiniteNumber(attributeFunc(point), args[0])))
+      );
+  }
+
+  return (point: Trajectorypoint) =>
+    numberTransformScale(
+      toFiniteNumber(attributeFunc(point), args[0]),
+      domainList.values,
+      valueList.values
+    );
 };
 
-export const parseLinearParameters = (str: string) => {
+const parseLinearExpression = (
+  str: string,
+  expectedOutputKind?: OutputKind
+): LinearMappingFunction | null => {
+  const match = str.trim().match(LINEAR_REGEX);
+  if (!match) return null;
 
-  const match = str.match(linearRegex);
+  const args = splitArguments(match[1]);
+  if (args.length !== 2 && args.length !== 3) {
+    throw new Error(`Invalid linear expression: ${str}`);
+  }
 
-  const minValue = 0;
-  const maxValue = 150;
-  if (match) {
-    // 获取参数部分
-    const params = match[1];
-    // 分割参数，考虑到括号内的逗号
-    const args = [];
-    let balance = 0; // 用来跟踪括号平衡
-    let start = 0;
+  const attributeFunc = parseTAttribute(args[0]);
 
-    for (let i = 0; i < params.length; i++) {
-      const char = params[i];
-      if (char === '[') balance++;
-      if (char === ']') balance--;
-      // 如果找到逗号且当前不在括号内，则分割
-      if (char === ',' && balance === 0) {
-        args.push(params.slice(start, i).trim());
-        start = i + 1;
-      }
-    }
-    // 添加最后一个参数
-    args.push(params.slice(start).trim());
-    const attributeFunc = parseTAttribute(args[0]);
-    if (args.length == 2) {
-      // "linear(speed($T), [#b35a00, #d6d632])"
-      // speed($T), [#b35a00, #d6d632]
+  if (args.length === 2) {
+    const valueList = extractList(args[1]);
+    ensureOutputKind(valueList.type, expectedOutputKind, str);
 
-      const valuelist = extractList(args[1]);
-      if (valuelist.type == 'color') {
-
-
-        return (T: Trajectory) => {
-
-          const colorInterpolator = d3.interpolateRgbBasis(
-            valuelist.values as string[]
-          );
-          const attributeValue = attributeFunc(T) as number;
-          const normalizedValue =
-            (attributeValue - minValue) / (maxValue - minValue);
-          return d3.rgb(colorInterpolator(normalizedValue));
-        };
-      } else {
-        return (T: Trajectory) => {
-          return numberTransformScale(
-            attributeFunc(T) as number,
-            [0, 30],
-            valuelist.values as number[]
-          );
-        };
-      }
-    } else if (args.length == 3) {
-
-      const indexlist = extractList(args[1]);
-      const valuelist = extractList(args[2]);
+    if (valueList.type === 'color') {
       const scale = d3
         .scaleLinear()
-        .domain(indexlist.values as number[])
-        .range([0, 1]);
-      if (indexlist.type == 'number') {
-        if (valuelist.type == 'color') {
-          return (T: Trajectory) => {
-            const colorInterpolator = d3.interpolateRgbBasis(
-              valuelist.values as string[]
-            );
-
-            return d3.rgb(colorInterpolator(scale(attributeFunc(T) as number)));
-          };
-        } else {
-          return (T: Trajectory) =>
-            numberTransformScale(
-              attributeFunc(T) as number,
-              indexlist.values as number[],
-              valuelist.values as number[]
-            );
-        }
-      }
+        .domain(DEFAULT_TRAJECTORY_COLOR_RANGE)
+        .range([0, 1])
+        .clamp(true);
+      const colorInterpolator = buildColorInterpolator(valueList.values);
+      return (trajectory: Trajectory) =>
+        d3.rgb(
+          colorInterpolator(
+            scale(toFiniteNumber(attributeFunc(trajectory), args[0]))
+          )
+        );
     }
 
-    return null;
-  } else {
-    return null; 
+    return (trajectory: Trajectory) =>
+      numberTransformScale(
+        toFiniteNumber(attributeFunc(trajectory), args[0]),
+        DEFAULT_TRAJECTORY_NUMBER_RANGE,
+        valueList.values
+      );
   }
+
+  const domainList = extractList(args[1]);
+  const valueList = extractList(args[2]);
+  if (domainList.type !== 'number') {
+    throw new Error(`Linear domain must be numeric: ${args[1]}`);
+  }
+
+  ensureOutputKind(valueList.type, expectedOutputKind, str);
+
+  if (valueList.type === 'color') {
+    const scale = d3
+      .scaleLinear()
+      .domain(domainList.values)
+      .range([0, 1])
+      .clamp(true);
+    const colorInterpolator = buildColorInterpolator(valueList.values);
+    return (trajectory: Trajectory) =>
+      d3.rgb(
+        colorInterpolator(
+          scale(toFiniteNumber(attributeFunc(trajectory), args[0]))
+        )
+      );
+  }
+
+  return (trajectory: Trajectory) =>
+    numberTransformScale(
+      toFiniteNumber(attributeFunc(trajectory), args[0]),
+      domainList.values,
+      valueList.values
+    );
 };
 
-export const parseColorString = (str: string): { type: string; value: any } => {
-  const tryParseColor = parseColor(str);
-  if (tryParseColor) return { type: 'static', value: tryParseColor };
+export const parseGradientParameters = (str: string) =>
+  parseGradientExpression(str);
 
-  const tryParseGradientParameters = parseGradientParameters(str);
-  if (tryParseGradientParameters)
-    return { type: 'gradient', value: tryParseGradientParameters };
+export const parseLinearParameters = (str: string) =>
+  parseLinearExpression(str);
 
-  const tryParseLinearParameters = parseLinearParameters(str);
-  if (tryParseLinearParameters) {
-    return { type: 'linear', value: tryParseLinearParameters };
+/**
+ * Parse a color style string.
+ *
+ * Examples:
+ * - "#333333"
+ * - "red"
+ * - "gradient($P.speed, [#b35a00, #d6d632])"
+ * - "linear(speed($T), [#2c7bb6, #ffffbf, #d7191c])"
+ */
+export const parseColorString = (str: string): ParsedColorMapping => {
+  const staticColor = parseColor(str);
+  if (staticColor) {
+    return { type: 'static', value: staticColor };
   }
-  return { type: 'static', value: '#333333' };
+
+  const gradientValue = parseGradientExpression(str, 'color');
+  if (gradientValue) {
+    return { type: 'gradient', value: gradientValue as PointColorAccessor };
+  }
+
+  const linearValue = parseLinearExpression(str, 'color');
+  if (linearValue) {
+    return { type: 'linear', value: linearValue as TrajectoryColorAccessor };
+  }
+
+  throw new Error(`Invalid color style expression: ${str}`);
 };
 
+/**
+ * Parse a numeric style value.
+ *
+ * Examples:
+ * - 5
+ * - 0.8
+ * - "gradient($P.speed, [2, 6, 12])"
+ * - "linear(distance($T), [0, 5, 10], [2, 6, 10])"
+ */
 export const parseNumberString = (
   value: string | number
-): { type: string; value: any } => {
-  if (typeof value == 'number') {
-    return { type: 'static', value: value };
-  } else {
-    const tryGradient = parseGradientParameters(value);
-    if (tryGradient) return { type: 'gradient', value: tryGradient };
-
-    const tryLinear = parseLinearParameters(value);
-
-    if (tryLinear) return { type: 'linear', value: tryLinear };
+): ParsedNumericMapping => {
+  if (typeof value === 'number') {
+    return { type: 'static', value };
   }
-  return { type: 'static', value: value };
+
+  const staticNumber = parseStaticNumber(value);
+  if (staticNumber !== null) {
+    return { type: 'static', value: staticNumber };
+  }
+
+  const gradientValue = parseGradientExpression(value, 'number');
+  if (gradientValue) {
+    return { type: 'gradient', value: gradientValue as PointNumericAccessor };
+  }
+
+  const linearValue = parseLinearExpression(value, 'number');
+  if (linearValue) {
+    return { type: 'linear', value: linearValue as TrajectoryNumericAccessor };
+  }
+
+  throw new Error(`Invalid numeric style expression: ${value}`);
 };

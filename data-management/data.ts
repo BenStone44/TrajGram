@@ -1,38 +1,26 @@
 import type { RelationTreeNode } from '../Trajectoolkit';
-import type { RoadNetworkItem } from '../interfaces/road-network';
-import type { Trajectory } from '../interfaces/trajectory';
-import type { FeatureCollection, Feature } from 'geojson';
+import { normalizeDataByType } from './normalize';
+export type {
+  DataProps,
+  DataSetting,
+  DataType,
+  StandardDataFormat
+} from './types';
+import type { DataProps, DataType, StandardDataFormat } from './types';
 
-export type DataType = 'trajectory' | 'roadnetwork' | 'geojson';
-export type standardDataFormat =
-  | Trajectory[]
-  | RoadNetworkItem[]
-  | FeatureCollection
-  | Feature;
-
-export interface DataSetting {
-  id: string;
-  type: DataType;
-  url: string;
-}
-
-export interface DataProps {
-  id: string;
-  type: DataType;
-  data: standardDataFormat | null;
-}
+export type standardDataFormat = StandardDataFormat;
 
 export class Data {
   public id = 'null';
   public type: DataType = 'geojson';
-  public data: standardDataFormat | null = null;
+  public data: StandardDataFormat | null = null;
   public children: RelationTreeNode[] = [];
   public callBack = new Map<string, () => any>();
 
   constructor(props: DataProps) {
     this.id = props.id;
-    this.data = props.data;
     this.type = props.type;
+    this.data = normalizeDataByType(props.type, props.data);
   }
 
   public update() {
@@ -44,8 +32,8 @@ export class Data {
     }
   }
 
-  public updateData(newdata: any){
-    this.data = newdata
+  public updateData(newdata: unknown){
+    this.data = normalizeDataByType(this.type, newdata)
     this.update()
   }
 }

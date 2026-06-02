@@ -16,7 +16,8 @@ import {
 } from './render-manager/trajectory-point-group';
 import { Query, type QuerySetting } from './query/query';
 import { Selection, type SelectionProps } from './selection/selection';
-import { Data, type DataProps, type DataSetting } from './data-management/data';
+import { Data, type DataProps } from './data-management/data';
+import type { DataSetting } from './data-management/types';
 import { Encoding, type EncodingSettings } from './encoding/encoding';
 import {
   TrajectoryMarkerGroup,
@@ -82,6 +83,9 @@ export class Trajectoolkit implements IControl {
   public markers: any[] = [];
 
   public _baseUrl: string = '';
+  private _stopMapDrag = () => {
+    this.map?.stop();
+  };
 
   constructor(baseUrl?: string) {
     this.trajectoryRendering = {
@@ -487,17 +491,14 @@ export class Trajectoolkit implements IControl {
     this._updateContainerSize();
 
     map.on('resize', () => {
-      this._updateContainerSize;
-      this._refresh;
+      void this._updateContainerSize();
+      this._refresh();
     });
     map.on('zoom', this._refresh);
 
     map.on('drag', this._refresh);
     map.on('dragend', this._refresh);
-
-    map.on('dragend', function () {
-      map.stop();
-    });
+    map.on('dragend', this._stopMapDrag);
 
     return container;
   }
@@ -535,9 +536,8 @@ export class Trajectoolkit implements IControl {
     map.off('resize', this._updateContainerSize);
     map.off('zoom', this._refresh);
     map.off('drag', this._refresh);
-    map.off('dragend', function () {
-      map.stop();
-    });
+    map.off('dragend', this._refresh);
+    map.off('dragend', this._stopMapDrag);
     this.clearAll();
   }
 
@@ -626,6 +626,44 @@ export class Trajectoolkit implements IControl {
     }
   }
 
+  private _applyParserConfig(jsonFile: any, dss: DataSetting[], results?: any[]) {
+    if (results) {
+      const dataprops = results.map((result, i) => {
+        return {
+          id: dss[i].id,
+          type: dss[i].type,
+          data: result
+        };
+      });
+      dataprops.forEach((dataprop) => this.addDataByProps(dataprop));
+    } else {
+      const dataprops = dss.map((ds) => {
+        return {
+          id: ds.id,
+          type: ds.type,
+          data: null
+        };
+      });
+      dataprops.forEach((dataprop) => this.addDataByProps(dataprop));
+    }
+
+    if (jsonFile.selections) {
+      const selectKeys = Object.keys(jsonFile.selections);
+      selectKeys.forEach((selectKey: string) => {
+        const selectItem = jsonFile.selections[selectKey];
+        this.addSelectionByJson({ id: selectKey, type: selectItem });
+      });
+    }
+
+    jsonFile.queries?.forEach((queryItem: QuerySetting) => {
+      this.addQueryByJson(queryItem);
+    });
+
+    jsonFile.encodings?.forEach((encodingItem: EncodingSettings) => {
+      this.addEncodingByJson(encodingItem);
+    });
+  }
+
   public jsonParser = async (jsonFile: any) => {
     if (this.map) {
         const dss: DataSetting[] = jsonFile.data;
@@ -634,6 +672,8 @@ export class Trajectoolkit implements IControl {
         if (this._baseUrl) {
             console.log('Base URL exists, skipping data fetch');
             await this.updateConfig(jsonFile)
+            this._applyParserConfig(jsonFile, dss);
+            return;
             
             // 直接创建带有 null data 的 dataprops
             const dataprops = dss.map((ds) => {
@@ -669,6 +709,14 @@ export class Trajectoolkit implements IControl {
 
         // 原有的数据获取逻辑
         const fetchPromises = dss.map((ds) => fetch(ds.url).then((response) => response.json()));
+        try {
+            const results = await Promise.all(fetchPromises);
+            this._applyParserConfig(jsonFile, dss, results);
+            return;
+        } catch (error) {
+            console.error('璇锋眰澶辫触:', error);
+            throw error;
+        }
         Promise.all(fetchPromises)
             .then((results) => {
                 const dataprops = results.map((result, i) => {
@@ -706,6 +754,13 @@ export class Trajectoolkit implements IControl {
  * 清空所有内容，包括渲染组、数据、查询、选择、编码等
  */
   public clearAll = () => {
+    for (const group of this.markerRendering.groups.values()) {
+      group.clear();
+    }
+    for (const group of this.textRendering.groups.values()) {
+      group.clear();
+    }
+
     this.trajectoryRendering.groups.clear();
     this.pointRendering.groups.clear();
     this.markerRendering.groups.clear();
@@ -729,7 +784,7 @@ export class Trajectoolkit implements IControl {
     this.clearAnnotationsSVG();
     
     // 清空WebGL画布
-    this.clearGL(this.trajectoryRendering);
-    this.clearGL(this.pointRendering);
+    if (this.trajectoryRendering.gl) this.clearGL(this.trajectoryRendering);
+    if (this.pointRendering.gl) this.clearGL(this.pointRendering);
   };
 }

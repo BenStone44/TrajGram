@@ -6,7 +6,7 @@ import type { Point, Feature, LineString, GeoJsonProperties } from 'geojson';
 import * as turf from '@turf/turf';
 import lineIntersect from '@turf/line-intersect';
 import pointToLineDistance from '@turf/point-to-line-distance';
-import { computeUnitVector } from '../encoding/parse';
+import { computeUnitVector } from '../encoding/position';
 import { Trajectoolkit } from '../Trajectoolkit';
 import _ from 'lodash';
 
