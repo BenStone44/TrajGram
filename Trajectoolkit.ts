@@ -754,6 +754,9 @@ export class Trajectoolkit implements IControl {
  * 清空所有内容，包括渲染组、数据、查询、选择、编码等
  */
   public clearAll = () => {
+    for (const encoding of this._encodings.values()) {
+      encoding.clear?.();
+    }
     for (const group of this.markerRendering.groups.values()) {
       group.clear();
     }

@@ -1,158 +1,102 @@
-import type { Feature, FeatureCollection, LineString, MultiLineString, Position } from 'geojson';
+import type {
+  Feature,
+  FeatureCollection,
+  LineString,
+  MultiLineString
+} from 'geojson';
 import { calculateDistance } from '../utils/utils_calculation';
 import type { RoadNetworkItem } from '../interfaces/road-network';
 import type {
-  ComputedAttribute,
-  SourceAttribute,
   Trajectory,
   Trajectorypoint
 } from '../interfaces/trajectory';
-import type { DataType, StandardDataFormat } from './types';
+import { enrichTrajectoryComputedValues } from './computed';
+import { NormalizationReportBuilder } from './report';
+import { normalizeTrajectoryData } from './normalizers/trajectory';
+import type {
+  DataType,
+  NormalizationResult,
+  StandardDataFormat
+} from './types';
+import {
+  flattenLineCoordinates,
+  isFeature,
+  isFeatureCollection,
+  isLineStringFeature,
+  isRecord,
+  normalizePosition,
+  normalizeSourceAttribute,
+  normalizeComputedAttribute,
+  toNumberOrUndefined,
+  toObjectArray,
+  toStringOrUndefined
+} from './shared';
 
-type RecordLike = Record<string, unknown>;
+const isFeaturePointRecord = (value: unknown) =>
+  isFeature(value) && value.geometry?.type === 'Point';
 
-const isRecord = (value: unknown): value is RecordLike =>
-  typeof value === 'object' && value !== null && !Array.isArray(value);
+const countPoints = (trajectories: Trajectory[]) =>
+  trajectories.reduce((sum, trajectory) => sum + trajectory.shapingPoints.length, 0);
 
-const toStringOrUndefined = (value: unknown) =>
-  typeof value === 'string' ? value : undefined;
+const countRoadPoints = (roads: RoadNetworkItem[]) =>
+  roads.reduce((sum, road) => sum + road.shapingPoints.length, 0);
 
-const toNumberOrUndefined = (value: unknown) =>
-  typeof value === 'number' && Number.isFinite(value) ? value : undefined;
+const extractFeatureProperties = (value: unknown) =>
+  isFeature(value) && isRecord(value.properties)
+    ? (value.properties as Record<string, unknown>)
+    : {};
 
-const toObjectArray = (value: unknown): unknown[] | null => {
-  if (Array.isArray(value)) {
-    return value;
-  }
-  if (isRecord(value) && Array.isArray(value.data)) {
-    return value.data;
-  }
-  if (isRecord(value) && Array.isArray(value.features)) {
-    return value.features;
-  }
-  if (isRecord(value) && Array.isArray(value.items)) {
-    return value.items;
-  }
-  return null;
-};
-
-const isFeatureCollection = (value: unknown): value is FeatureCollection =>
-  isRecord(value) && value.type === 'FeatureCollection' && Array.isArray(value.features);
-
-const isFeature = (value: unknown): value is Feature =>
-  isRecord(value) && value.type === 'Feature';
-
-const normalizePosition = (value: unknown) => {
-  if (Array.isArray(value) && value.length >= 2) {
-    const [lng, lat] = value;
-    const lngNum = toNumberOrUndefined(lng);
-    const latNum = toNumberOrUndefined(lat);
-    if (lngNum !== undefined && latNum !== undefined) {
-      return { lng: lngNum, lat: latNum };
-    }
-  }
-
-  if (isRecord(value)) {
-    const lng = toNumberOrUndefined(value.lng ?? value.lon ?? value.longitude ?? value.x);
-    const lat = toNumberOrUndefined(value.lat ?? value.latitude ?? value.y);
-    if (lng !== undefined && lat !== undefined) {
-      return { lng, lat };
-    }
-  }
-
-  return null;
-};
-
-const normalizeSourceAttribute = (value: unknown): SourceAttribute | undefined => {
-  if (!isRecord(value)) {
-    return undefined;
-  }
-  const source: SourceAttribute = {};
-  const tid = toStringOrUndefined(value.tid);
-  const sid = toStringOrUndefined(value.sid);
-  if (tid !== undefined) source.tid = tid;
-  if (sid !== undefined) source.sid = sid;
-  return Object.keys(source).length ? source : undefined;
-};
-
-const normalizeComputedAttribute = (value: unknown): ComputedAttribute | undefined => {
-  if (!isRecord(value)) {
-    return undefined;
-  }
-  const computed: ComputedAttribute = {};
-  const trajDP = toNumberOrUndefined(value.trajDP);
-  const trajTP = toNumberOrUndefined(value.trajTP);
-  const segDP = toNumberOrUndefined(value.segDP);
-  const direction = isRecord(value.direction)
-    ? {
-        x: toNumberOrUndefined(value.direction.x) ?? 0,
-        y: toNumberOrUndefined(value.direction.y) ?? 0
-      }
-    : undefined;
-
-  if (trajDP !== undefined) computed.trajDP = trajDP;
-  if (trajTP !== undefined) computed.trajTP = trajTP;
-  if (segDP !== undefined) computed.segDP = segDP;
-  if (direction) computed.direction = direction;
-  return Object.keys(computed).length ? computed : undefined;
-};
-
-const normalizePointAttributes = (value: unknown) => {
-  const attributes: Trajectorypoint['attributes'] = {};
-  if (!isRecord(value)) {
-    return attributes;
-  }
-
-  const source = normalizeSourceAttribute(value.source);
-  const computed = normalizeComputedAttribute(value.computed);
-  const others = isRecord(value.others) ? value.others : undefined;
-
-  if (source) attributes.source = source;
-  if (computed) attributes.computed = computed;
-  if (others) attributes.others = others as Record<string, unknown>;
-  return attributes;
-};
-
-const normalizeTrajectoryPoint = (
+const normalizeRoadNetworkPoint = (
   value: unknown,
   index: number,
-  trajectoryId: string
+  roadId: string
 ): Trajectorypoint | null => {
-  if (!isRecord(value)) {
+  if (!isRecord(value) && !isFeaturePointRecord(value)) {
     return null;
   }
 
-  const basePoint = isRecord(value.basePoint) ? value.basePoint : value;
+  const basePoint = isRecord(value) && isRecord(value.basePoint) ? value.basePoint : value;
+  const basePointRecord = basePoint as Record<string, unknown>;
+  const valueRecord = value as Record<string, unknown>;
   const position =
-    normalizePosition(
-      (basePoint as RecordLike).position ??
-        (value as RecordLike).position ??
-        (value as RecordLike).coordinates ??
-        (value as RecordLike).geometry?.coordinates
-    ) ?? null;
+    normalizePosition(basePointRecord.position) ??
+    normalizePosition(basePointRecord.coordinates) ??
+    normalizePosition(basePoint) ??
+    normalizePosition(valueRecord.position) ??
+    normalizePosition(valueRecord.coordinates) ??
+    normalizePosition(valueRecord.geometry?.coordinates) ??
+    null;
 
   if (!position) {
     return null;
   }
 
   const time =
-    toStringOrUndefined((basePoint as RecordLike).time) ??
-    toStringOrUndefined((value as RecordLike).time) ??
-    toStringOrUndefined((value as RecordLike).timestamp);
+    toStringOrUndefined((basePoint as Record<string, unknown>).time) ??
+    toStringOrUndefined((value as Record<string, unknown>).time) ??
+    toStringOrUndefined((value as Record<string, unknown>).timestamp);
 
-  const pointId =
-    toStringOrUndefined(value.id) ?? `${trajectoryId}_p${index}`;
-
-  const attributes = normalizePointAttributes(
-    isRecord(value.attributes) ? value.attributes : value
-  );
-
-  if (!attributes.source) {
-    attributes.source = { tid: trajectoryId };
-  }
+  const attributes = {
+    source:
+      normalizeSourceAttribute(
+        isRecord((value as Record<string, unknown>).attributes)
+          ? ((value as Record<string, unknown>).attributes as Record<string, unknown>).source
+          : (value as Record<string, unknown>).source
+      ) ?? { tid: roadId },
+    computed: normalizeComputedAttribute(
+      isRecord((value as Record<string, unknown>).attributes)
+        ? ((value as Record<string, unknown>).attributes as Record<string, unknown>).computed
+        : (value as Record<string, unknown>).computed
+    ),
+    others: isRecord((value as Record<string, unknown>).attributes)
+      ? ((value as Record<string, unknown>).attributes as Record<string, unknown>).others
+      : undefined
+  };
 
   return {
-    id: pointId,
+    id:
+      toStringOrUndefined((value as Record<string, unknown>).id) ??
+      `${roadId}_p${index}`,
     basePoint: {
       position,
       ...(time ? { time } : {})
@@ -161,103 +105,25 @@ const normalizeTrajectoryPoint = (
   };
 };
 
-const normalizeTrajectoryRecord = (
-  value: unknown,
-  index: number
-): Trajectory | null => {
-  if (!isRecord(value)) {
-    return null;
-  }
-
-  const trajectoryId =
-    toStringOrUndefined(value.id) ??
-    toStringOrUndefined(value.tid) ??
-    `trajectory_${index}`;
-
-  const rawPoints =
-    toObjectArray(value.shapingPoints) ??
-    toObjectArray(value.points) ??
-    toObjectArray(value.samples) ??
-    (() => {
-      if (isFeature(value) && value.geometry?.type === 'LineString') {
-        return (value.geometry as LineString).coordinates.map((coordinates, pointIndex) => ({
-          id: `${trajectoryId}_p${pointIndex}`,
-          coordinates
-        }));
-      }
-      if (isFeature(value) && value.geometry?.type === 'MultiLineString') {
-        const firstLine = (value.geometry as MultiLineString).coordinates[0] ?? [];
-        return firstLine.map((coordinates, pointIndex) => ({
-          id: `${trajectoryId}_p${pointIndex}`,
-          coordinates
-        }));
-      }
-      return null;
-    })();
-
-  if (!rawPoints) {
-    return null;
-  }
-
-  const shapingPoints = rawPoints
-    .map((point, pointIndex) => normalizeTrajectoryPoint(point, pointIndex, trajectoryId))
-    .filter((point): point is Trajectorypoint => point !== null);
-
-  if (!shapingPoints.length) {
-    return null;
-  }
-
-  const times = shapingPoints
-    .map((point) => point.basePoint.time)
-    .filter((time): time is string => typeof time === 'string' && time.length > 0);
-
-  const starttime =
-    toStringOrUndefined(value.starttime) ?? times[0] ?? '';
-  const endtime =
-    toStringOrUndefined(value.endtime) ?? times[times.length - 1] ?? '';
-
-  const distance =
-    toNumberOrUndefined(value.distance) ??
-    (shapingPoints.length >= 2 ? calculateDistance(shapingPoints) : 0);
-
-  const attributes = isRecord(value.attributes)
-    ? (value.attributes as Record<string, unknown>)
-    : {};
-
-  return {
-    id: trajectoryId,
-    starttime,
-    endtime,
-    distance,
-    shapingPoints,
-    annotationPoints: isRecord(value.annotationPoints)
-      ? (value.annotationPoints as Trajectory['annotationPoints'])
-      : undefined,
-    annotationSubTrajectories: isRecord(value.annotationSubTrajectories)
-      ? (value.annotationSubTrajectories as Trajectory['annotationSubTrajectories'])
-      : undefined,
-    segmentInstanceIdList: Array.isArray(value.segmentInstanceIdList)
-      ? (value.segmentInstanceIdList as Trajectory['segmentInstanceIdList'])
-      : undefined,
-    attributes
-  };
-};
-
 const normalizeRoadNetworkRecord = (
   value: unknown,
   index: number
 ): RoadNetworkItem | null => {
-  if (!isRecord(value)) {
+  if (!isRecord(value) && !isLineStringFeature(value)) {
     return null;
   }
 
-  const id = toStringOrUndefined(value.id) ?? `road_${index}`;
+  const roadId =
+    toStringOrUndefined((value as Record<string, unknown>).id) ??
+    `road_${index}`;
+
   const rawPoints =
-    toObjectArray(value.shapingPoints) ??
+    toObjectArray((value as Record<string, unknown>).shapingPoints) ??
+    toObjectArray((value as Record<string, unknown>).points) ??
     (() => {
-      if (isFeature(value) && value.geometry?.type === 'LineString') {
-        return (value.geometry as LineString).coordinates.map((coordinates, pointIndex) => ({
-          id: `${id}_p${pointIndex}`,
+      if (isLineStringFeature(value)) {
+        return flattenLineCoordinates(value.geometry).map((coordinates, pointIndex) => ({
+          id: `${roadId}_p${pointIndex}`,
           coordinates
         }));
       }
@@ -266,62 +132,108 @@ const normalizeRoadNetworkRecord = (
 
   const shapingPoints =
     rawPoints?.map((point, pointIndex) =>
-      normalizeTrajectoryPoint(point, pointIndex, id)
+      normalizeRoadNetworkPoint(point, pointIndex, roadId)
     ).filter((point): point is Trajectorypoint => point !== null) ?? [];
 
   const distance =
-    toNumberOrUndefined(value.distance) ??
+    toNumberOrUndefined((value as Record<string, unknown>).distance) ??
     (shapingPoints.length >= 2 ? calculateDistance(shapingPoints) : 0);
 
-  if (!shapingPoints.length) {
-    return {
-      id,
-      distance,
-      shapingPoints: []
-    };
-  }
-
   return {
-    id,
+    id: roadId,
     distance,
     shapingPoints,
-    attributes: isRecord(value.attributes)
-      ? (value.attributes as RoadNetworkItem['attributes'])
-      : undefined
+    attributes: isRecord((value as Record<string, unknown>).attributes)
+      ? (value as Record<string, unknown>).attributes as RoadNetworkItem['attributes']
+      : extractFeatureProperties(value)
   };
+};
+
+const normalizeRoadNetworkData = (
+  data: unknown,
+  report: NormalizationReportBuilder
+) => {
+  const records = toObjectArray(data);
+  if (!records) {
+    report.addWarning(
+      'roadnetwork-unrecognized',
+      'Unable to detect a road network list from the input data.',
+      undefined,
+      'low'
+    );
+    report.setDetectedShape('unrecognized');
+    return [];
+  }
+
+  const roads = records
+    .map((record, index) => normalizeRoadNetworkRecord(record, index))
+    .filter((road): road is RoadNetworkItem => road !== null);
+
+  report.setDetectedShape('roadnetwork-array');
+  report.setCounts(roads.length, countRoadPoints(roads));
+  return roads;
+};
+
+const normalizeGeoJSONData = (
+  data: unknown,
+  report: NormalizationReportBuilder
+): FeatureCollection | Feature | null => {
+  if (isFeatureCollection(data) || isFeature(data)) {
+    report.setDetectedShape(
+      isFeatureCollection(data)
+        ? 'geojson-feature-collection'
+        : `geojson-${data.geometry?.type?.toLowerCase() ?? 'feature'}`
+    );
+    return data;
+  }
+
+  report.addWarning(
+    'geojson-unrecognized',
+    'Unable to recognize the input as GeoJSON.',
+    undefined,
+    'low'
+  );
+  report.setDetectedShape('unrecognized');
+  return null;
+};
+
+export const normalizeDataWithReport = (
+  type: DataType,
+  data: unknown
+): NormalizationResult => {
+  const report = new NormalizationReportBuilder(type);
+
+  if (data === null || data === undefined) {
+    report.setDetectedShape('empty');
+    report.addWarning('empty-input', 'Input data is empty.', undefined, 'low');
+    return { data: null, report: report.build() };
+  }
+
+  if (type === 'trajectory') {
+    const trajectories = enrichTrajectoryComputedValues(
+      normalizeTrajectoryData(data, report),
+      report
+    );
+    report.setCounts(trajectories.length, countPoints(trajectories));
+    return { data: trajectories, report: report.build() };
+  }
+
+  if (type === 'roadnetwork') {
+    const roads = normalizeRoadNetworkData(data, report);
+    return { data: roads, report: report.build() };
+  }
+
+  if (type === 'geojson') {
+    const geojson = normalizeGeoJSONData(data, report);
+    return { data: geojson, report: report.build() };
+  }
+
+  report.setDetectedShape('unrecognized');
+  report.addWarning('unknown-type', `Unsupported data type: ${type}`, undefined, 'low');
+  return { data: null, report: report.build() };
 };
 
 export const normalizeDataByType = (
   type: DataType,
   data: unknown
-): StandardDataFormat | null => {
-  if (data === null || data === undefined) {
-    return null;
-  }
-
-  if (type === 'geojson') {
-    if (isFeatureCollection(data) || isFeature(data)) {
-      return data;
-    }
-    return null;
-  }
-
-  const records = toObjectArray(data);
-  if (!records) {
-    return null;
-  }
-
-  if (type === 'trajectory') {
-    return records
-      .map((record, index) => normalizeTrajectoryRecord(record, index))
-      .filter((trajectory): trajectory is Trajectory => trajectory !== null);
-  }
-
-  if (type === 'roadnetwork') {
-    return records
-      .map((record, index) => normalizeRoadNetworkRecord(record, index))
-      .filter((road): road is RoadNetworkItem => road !== null);
-  }
-
-  return null;
-};
+): StandardDataFormat | null => normalizeDataWithReport(type, data).data;

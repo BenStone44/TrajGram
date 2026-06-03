@@ -2,7 +2,6 @@ import { LngLat } from 'mapbox-gl';
 import { Trajectoolkit } from '../Trajectoolkit';
 import type { Trajectory, Trajectorypoint } from '../interfaces/trajectory';
 import { TextSVG } from '../selection/svg/text';
-// import { parseAttributeEither } from '../parser/regex';
 import type { TextStyleMappingFunction } from '../encoding/annotation';
 
 export type TrajectoryTextGroupProps = {
@@ -42,8 +41,9 @@ export class TrajectoryTextGroup {
 
   constructor(core: Trajectoolkit, props: TrajectoryTextGroupProps) {
     this.core = core;
-    if (!core.AnnotationsSVG || !core.map)
+    if (!core.AnnotationsSVG || !core.map) {
       throw new Error('TKT not initialized');
+    }
     this._map = core.map;
     this.props = props;
 
@@ -76,10 +76,8 @@ export class TrajectoryTextGroup {
       follow: false
     };
 
-    const data = source.flatMap((T) =>
-      getPoints(T).map((p) => {
-        return { t: T, p: p };
-      })
+    const data = source.flatMap((trajectory) =>
+      getPoints(trajectory).map((point) => ({ t: trajectory, p: point }))
     );
 
     data.forEach((pt, index) => {
@@ -89,7 +87,7 @@ export class TrajectoryTextGroup {
       const defaultText = point.basePoint.time?.substring(11, 19) || 'text';
       const direction = point.attributes.computed?.direction;
       let angle = defaultEncoding.angle;
-      
+
       if (direction) {
         angle = this.computeAngleWithVector(direction);
       }
@@ -99,54 +97,49 @@ export class TrajectoryTextGroup {
         point.basePoint.position.lat
       );
 
-      // 使用映射函数计算样式值
-      const opacity = this.props.style.opacity?.type === 'static'
-        ? this.props.style.opacity.value as number
-        : this.props.style.opacity?.type === 'linear'
-        ? (this.props.style.opacity.value as (P: Trajectorypoint) => number)(point)
-        : defaultEncoding.opacity;
+      const opacity =
+        this.props.style.opacity?.type === 'static'
+          ? (this.props.style.opacity.value as number)
+          : this.props.style.opacity?.type === 'linear'
+          ? (this.props.style.opacity.value as (P: Trajectorypoint) => number)(point)
+          : defaultEncoding.opacity;
 
-      const color = this.props.style.color?.type === 'static'
-        ? this.props.style.color.value
-        : this.props.style.color?.type === 'linear'
-        ? (this.props.style.color.value as (P: Trajectorypoint) => any)(point)
-        : defaultEncoding.color;
+      const color =
+        this.props.style.color?.type === 'static'
+          ? this.props.style.color.value
+          : this.props.style.color?.type === 'linear'
+          ? (this.props.style.color.value as (P: Trajectorypoint) => string)(point)
+          : defaultEncoding.color;
 
-      const font_size = this.props.style.font_size?.type === 'static'
-        ? this.props.style.font_size.value as number
-        : this.props.style.font_size?.type === 'linear'
-        ? (this.props.style.font_size.value as (P: Trajectorypoint) => number)(point)
-        : defaultEncoding.font_size;
+      const font_size =
+        this.props.style.font_size?.type === 'static'
+          ? (this.props.style.font_size.value as number)
+          : this.props.style.font_size?.type === 'linear'
+          ? (this.props.style.font_size.value as (P: Trajectorypoint) => number)(point)
+          : defaultEncoding.font_size;
 
-      const transform = defaultEncoding.transform;
-
+      const transform = this.props.style.transform || defaultEncoding.transform;
       const follow = this.props.style.follow || defaultEncoding.follow;
 
-      // 处理文本内容
       let textV = '';
       if (this.props.style.text?.value) {
         const textValue = this.props.style.text.value;
         if (typeof textValue === 'string') {
           textV = textValue;
         } else if (typeof textValue === 'function') {
-          // 根据函数签名判断是点函数还是轨迹函数
-          try {
-            textV = (textValue as (P: Trajectorypoint) => string)(point);
-          } catch {
-            textV = (textValue as (T: Trajectory) => string)(trajectory);
-          }
+          textV = textValue(point, trajectory);
         }
       }
 
       const trajectoryTextElement: TrajectoryTextElemnet = {
         id: point.id,
         trajectorypoint: point,
-        center: center,
-        color: color,
-        opacity: opacity,
-        font_size: font_size,
+        center,
+        color,
+        opacity,
+        font_size,
         text: textV || defaultText,
-        transform: transform,
+        transform,
         rotate: follow ? angle : 0
       };
 
@@ -159,9 +152,12 @@ export class TrajectoryTextGroup {
     const dotProduct =
       vector.x * horizontalVector.x + vector.y * horizontalVector.y;
     const vectorLength = Math.sqrt(vector.x * vector.x + vector.y * vector.y);
-    const cosineValue = dotProduct / vectorLength;
-    const angleInRadians = Math.acos(cosineValue);
+    if (vectorLength === 0) {
+      return 0;
+    }
 
+    const cosineValue = dotProduct / vectorLength;
+    const angleInRadians = Math.acos(Math.max(-1, Math.min(1, cosineValue)));
     const angleInDegrees = (angleInRadians * 180) / Math.PI;
     return vector.y < 0 ? -angleInDegrees : angleInDegrees;
   }

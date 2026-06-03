@@ -72,9 +72,22 @@ TrajGram accepts these common forms and normalizes them into the standard `Traje
 - Missing `starttime` / `endtime` are inferred from point times when possible.
 - Missing `distance` is computed from `shapingPoints` when possible.
 - Missing point `source.tid` is filled with the parent trajectory id.
+- Missing point `computed.trajDP` is computed from cumulative distance ratio.
+- Missing point `computed.trajTP` is computed from timestamp ratio, with distance/index fallback.
+- Missing point `computed.direction` is computed as a local unit direction vector.
 - Unsupported or invalid points are skipped instead of crashing the whole dataset.
 
-## 4. Recommended Authoring Format
+## 4. Offline Preprocessing
+
+Use the batch script when you want to normalize raw data before loading it into TrajGram:
+
+```bash
+npm run process:trajectory -- data/raw_point_sequences.json data/raw_point_sequences.normalized.json --report data/raw_point_sequences.report.json
+```
+
+The sample files above demonstrate `point[][]` input where each point contains longitude, latitude, and time.
+
+## 5. Recommended Authoring Format
 
 Use this form when possible:
 
@@ -101,7 +114,7 @@ Use this form when possible:
 }
 ```
 
-## 5. Notes
+## 6. Notes
 
 - `trajectory` data should be treated as time-ordered.
 - `roadnetwork` data should include a stable `id`.

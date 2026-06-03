@@ -9,6 +9,9 @@ export type MarkerInfo = {
 };
 
 export class MarkerSVG {
+  static readonly BASE_WIDTH = 28;
+  static readonly BASE_HEIGHT = 36;
+
   core: Trajectoolkit;
   _map: mapboxgl.Map;
   container: SVGSVGElement;
@@ -40,26 +43,29 @@ export class MarkerSVG {
     };
   }
   public draw() {
-    const scale = this.data.size;
+    const scale = this.data.size / MarkerSVG.BASE_HEIGHT;
     const x = this.coordinates.x;
     const y = this.coordinates.y;
+    const offsetX = x - 14 * scale;
+    const offsetY = y - 36 * scale;
+
     this.remove();
     this.g = d3.select(this.container).append('g');
     this.g
       .append('path')
-      .attr('transform', ` scale(${scale}) translate(${x - 14},${y - 36})`)
-      .attr('transform-origin', `${x}px ${y}px`)
+      .attr('transform', `translate(${offsetX},${offsetY}) scale(${scale})`)
       .attr(
         'd',
         'M14,0 C21.732,0 28,5.641 28,12.6 C28,23.963 14,36 14,36 C14,36 0,24.064 0,12.6 C0,5.641 6.268,0 14,0 Z'
       )
-      .attr('fill', this.data.color || '#000000');
+      .attr('fill', this.data.color || '#000000')
+      .attr('opacity', this.data.opacity);
     this.g
       .append('circle')
-      .attr('transform', ` scale(${scale}) translate(${x - 14},${y - 36})`)
-      .attr('transform-origin', `${x}px ${y}px`)
+      .attr('transform', `translate(${offsetX},${offsetY}) scale(${scale})`)
       .attr('id', 'Oval')
       .attr('fill', '#FFFFFF')
+      .attr('opacity', this.data.opacity)
       .attr('fill-rule', 'nonzero')
       .attr('cx', 14)
       .attr('cy', 14)

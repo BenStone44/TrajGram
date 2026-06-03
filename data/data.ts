@@ -1,12 +1,17 @@
 import type { RelationTreeNode } from '../Trajectoolkit';
-import { normalizeDataByType } from './normalize';
+import { normalizeDataWithReport } from './normalize';
 export type {
   DataProps,
   DataSetting,
   DataType,
   StandardDataFormat
 } from './types';
-import type { DataProps, DataType, StandardDataFormat } from './types';
+import type {
+  DataProps,
+  DataType,
+  NormalizationReport,
+  StandardDataFormat
+} from './types';
 
 export type standardDataFormat = StandardDataFormat;
 
@@ -14,13 +19,16 @@ export class Data {
   public id = 'null';
   public type: DataType = 'geojson';
   public data: StandardDataFormat | null = null;
+  public normalizationReport: NormalizationReport | null = null;
   public children: RelationTreeNode[] = [];
   public callBack = new Map<string, () => any>();
 
   constructor(props: DataProps) {
     this.id = props.id;
     this.type = props.type;
-    this.data = normalizeDataByType(props.type, props.data);
+    const normalized = normalizeDataWithReport(props.type, props.data);
+    this.data = normalized.data;
+    this.normalizationReport = normalized.report;
   }
 
   public update() {
@@ -33,7 +41,9 @@ export class Data {
   }
 
   public updateData(newdata: unknown){
-    this.data = normalizeDataByType(this.type, newdata)
+    const normalized = normalizeDataWithReport(this.type, newdata);
+    this.data = normalized.data;
+    this.normalizationReport = normalized.report;
     this.update()
   }
 }

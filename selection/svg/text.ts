@@ -1,6 +1,7 @@
-import { LngLat } from "mapbox-gl";
-import { Trajectoolkit } from "../../Trajectoolkit";
-import * as d3 from "d3";
+import { LngLat } from 'mapbox-gl';
+import { Trajectoolkit } from '../../Trajectoolkit';
+import * as d3 from 'd3';
+
 export type TextInfo = {
   point: LngLat;
   color: string;
@@ -20,47 +21,48 @@ export class TextSVG {
   data: TextInfo;
   coordinates = { x: 0, y: 0 };
   center: LngLat;
+
   constructor(core: Trajectoolkit, data: TextInfo) {
     this.core = core;
-    if (!core.AnnotationsSVG || !core.map)
-      throw new Error("TKT not initialized");
+    if (!core.AnnotationsSVG || !core.map) {
+      throw new Error('TKT not initialized');
+    }
     this.container = core.AnnotationsSVG;
     this._map = core.map;
     this.center = data.point;
-    this.g = d3.select(this.container).append("g");
+    this.g = d3.select(this.container).append('g');
 
     this.data = data;
     this.coordinates = this._calculateCoordinates();
-    //this.transform = this.parseTransform();
-
     this.draw();
   }
+
   private _calculateCoordinates() {
     const rp = this._map.project(this.center);
-
     return {
       x: rp.x,
-      y: rp.y,
+      y: rp.y
     };
   }
+
   public parseTransform() {
-    const initial_transform = this.data.transform;
+    const initialTransform = this.data.transform;
     const regex = /translate\((-?\d*\.?\d+),\s*(-?\d*\.?\d+)\)/;
-    const match = initial_transform.match(regex);
+    const match = initialTransform.match(regex);
 
     if (match && match.length === 3) {
-      const currentX = this.core.map ? parseFloat(match[1]) : 0;
-      const currentY = this.core.map ? parseFloat(match[2]) : 0;
-
-      const x = this.coordinates.x + currentX;
-      const y = this.coordinates.y + currentY;
-
-      return { x, y };
-    } else {
-      const x = this.coordinates.x;
-      const y = this.coordinates.y;
-      return { x, y };
+      const currentX = parseFloat(match[1]);
+      const currentY = parseFloat(match[2]);
+      return {
+        x: this.coordinates.x + currentX,
+        y: this.coordinates.y + currentY
+      };
     }
+
+    return {
+      x: this.coordinates.x,
+      y: this.coordinates.y
+    };
   }
 
   public draw() {
@@ -70,45 +72,48 @@ export class TextSVG {
     this.remove();
     const transform = this.parseTransform();
 
-    this.g = d3.select(this.container).append("g");
+    this.g = d3.select(this.container).append('g');
     const rect = this.g
-      //.attr('transform', ` translate(${x - rectWidth / 2},${y - rectHeight})`)
-      // .attr('transform-origin', `${x}px ${y}px`)
-      .text("text")
-      .append("rect")
-      .attr("fill", this.data.color || "lightblue")
-      .attr("rx", 3)
-      .attr("opacity", 0.9);
+      .append('rect')
+      .attr('fill', '#ffffff')
+      .attr('rx', 3)
+      .attr('opacity', Math.min(this.data.opacity, 0.9));
+
     const text = this.g
-      .append("text")
+      .append('text')
       .text(this.data.text)
-      .attr("text-anchor", "middle")
-      .attr("alignment-baseline", "middle")
-      .attr("fill", "white")
-      .attr("font-size", "${this.data.font_size}px");
+      .attr('text-anchor', 'middle')
+      .attr('alignment-baseline', 'middle')
+      .attr('fill', this.data.color || '#333333')
+      .attr('opacity', this.data.opacity)
+      .attr('font-size', `${this.data.font_size}px`);
+
     const textElement = text.node();
-    if (textElement) {
-      const b = textElement.getBBox();
-      const width = b.width;
-      const height = b.height;
-      //获取text
-      text.attr(
-        "transform",
-        `rotate(${this.data.rotate} ${x} ${y}) translate(${transform.x},${transform.y})`,
-      );
-      rect
-        .attr("width", width + 20)
-        .attr("height", height + 10)
-        .attr(
-          "transform",
-          `rotate(${this.data.rotate} ${x} ${y}) translate(${
-            transform.x - (width + 20) / 2
-          },${transform.y - (height + 10) / 2}) `,
-        );
-    } else {
-      console.error("Text element is null or undefined.");
+    if (!textElement) {
+      console.error('Text element is null or undefined.');
+      return;
     }
+
+    const box = textElement.getBBox();
+    const width = box.width;
+    const height = box.height;
+
+    text.attr(
+      'transform',
+      `rotate(${this.data.rotate} ${x} ${y}) translate(${transform.x},${transform.y})`
+    );
+
+    rect
+      .attr('width', width + 20)
+      .attr('height', height + 10)
+      .attr(
+        'transform',
+        `rotate(${this.data.rotate} ${x} ${y}) translate(${
+          transform.x - (width + 20) / 2
+        },${transform.y - (height + 10) / 2})`
+      );
   }
+
   public remove() {
     this.g.remove();
   }

@@ -29,20 +29,32 @@ export class TrajectoryMarkerGroup {
   props: TrajectoryMarkerGroupProps;
   elementDict: { [key: string]: TrajectoryMarkerElemnet } = {};
   markerInstances: MarkerSVG[] = [];
+  private baseZoom: number;
 
   constructor(core: Trajectoolkit, props: TrajectoryMarkerGroupProps) {
     this.core = core;
     this.props = props;
+    this.baseZoom = this.core.map?.getZoom() ?? 14;
     this._createMarkerElements(props.data());
     Object.values(this.elementDict).forEach((element) => {
       const markerSVG = new MarkerSVG(this.core, {
         point: element.center,
         color: element.color,
         opacity: element.opacity,
-        size: element.size
+        size: this._getRenderedSize(element.size)
       });
       this.markerInstances.push(markerSVG);
     });
+  }
+
+  private _getRenderedSize(size: number) {
+    if (!this.props.widthFollowZoom || !this.core.map) {
+      return size;
+    }
+
+    const zoomDelta = this.core.map.getZoom() - this.baseZoom;
+    const zoomScale = Math.pow(2, zoomDelta / 2);
+    return Math.max(size * zoomScale, 4);
   }
 
   private _createMarkerElements(data: Trajectorypoint[]) {
@@ -104,7 +116,7 @@ export class TrajectoryMarkerGroup {
         point: element.center,
         color: element.color,
         opacity: element.opacity,
-        size: element.size
+        size: this._getRenderedSize(element.size)
       });
       this.markerInstances.push(markerSVG);
     });

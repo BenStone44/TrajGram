@@ -1,9 +1,17 @@
+import type { Feature, FeatureCollection } from 'geojson';
 import type { Trajectory } from '../interfaces/trajectory';
+import { AreaEncoding } from './area';
 import { type TrajectoryGroup } from '../render/trajectory-group';
 import { Trajectoolkit } from '../Trajectoolkit';
 import { Annotation } from './annotation';
-import { createEncodingStyleMapping, createTrajectoryGroupProps, isEncodingStyleKey } from './style';
+import {
+  createEncodingStyleMapping,
+  createTrajectoryGroupProps,
+  isEncodingStyleKey
+} from './style';
+import { createAreaEncodingStyleMapping } from './area';
 import type {
+  AreaStyleMappingFunction,
   ColorFunction,
   EncodingSettings,
   EncodingStyleKey,
@@ -24,21 +32,27 @@ export type {
 export class Encoding {
   public id: string;
   public setting: EncodingSettings;
-  public data: () => Promise<Trajectory[]>;
+  public data: () => Promise<unknown>;
   public trajectoryGroup: TrajectoryGroup | null = null;
+  public areaEncoding: AreaEncoding | null = null;
   public annotations = new Map<string, Annotation>();
-  public mappingFunction: StyleMappingFunction;
+  public mappingFunction: StyleMappingFunction | null = null;
+  public areaMappingFunction: AreaStyleMappingFunction | null = null;
   public static type = 'encoding';
   public isHoverorClick = false;
-  private cachedData: Trajectory[] = [];
+  private cachedData: unknown = null;
   private core: Trajectoolkit;
 
   constructor(props: EncodingSettings, core: Trajectoolkit) {
     this.setting = props;
     this.core = core;
     this.id = props.id;
-    this.data = () => this.core.getDQSDatabyID(this.setting.source) as Promise<Trajectory[]>;
-    this.mappingFunction = createEncodingStyleMapping(props);
+    this.data = () => this.core.getDQSDatabyID(this.setting.source);
+    if (props.type === 'area') {
+      this.areaMappingFunction = createAreaEncodingStyleMapping(props);
+    } else {
+      this.mappingFunction = createEncodingStyleMapping(props);
+    }
     this.core.getDQSbyID(this.setting.source)?.children.push(this);
     this.update();
   }
@@ -47,6 +61,9 @@ export class Encoding {
     type: EncodingStyleKey,
     func: StyleValue<ColorFunction | NumericFunction>
   ) {
+    if (!this.mappingFunction) {
+      return;
+    }
     if (type === 'color') {
       this.mappingFunction.color = func as StyleValue<ColorFunction>;
     }
@@ -61,17 +78,44 @@ export class Encoding {
 
   private clearRenderedArtifacts() {
     this.core.trajectoryRendering.groups.delete(this.id);
+    this.areaEncoding?.clear();
     for (const annotation of this.annotations.values()) {
       annotation.clear();
     }
     this.annotations.clear();
     this.trajectoryGroup = null;
+    this.areaEncoding = null;
+  }
+
+  public clear() {
+    this.clearRenderedArtifacts();
   }
 
   draw() {
     this.clearRenderedArtifacts();
+
+    if (this.setting.type === 'area') {
+      if (!this.areaMappingFunction) {
+        throw new Error('area mapping function not initialized');
+      }
+      this.areaEncoding = new AreaEncoding(
+        this.setting,
+        this.areaMappingFunction,
+        this.core
+      );
+      this.areaEncoding.update(this.cachedData as FeatureCollection | Feature | null);
+      return;
+    }
+
+    if (!this.mappingFunction) {
+      throw new Error('trajectory mapping function not initialized');
+    }
     this.trajectoryGroup = this.core.addTrajectoryGroup(
-      createTrajectoryGroupProps(this.setting, this.cachedData, this.mappingFunction)
+      createTrajectoryGroupProps(
+        this.setting,
+        this.cachedData as Trajectory[],
+        this.mappingFunction
+      )
     );
 
     for (const annotationId in this.setting.annotations) {

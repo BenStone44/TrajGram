@@ -8,7 +8,11 @@ import {
 import {
   TrajectoryTextGroupProps
 } from '../../render/trajectory-text-group';
-import { parseColorString, parseNumberString } from '../../parser/regex';
+import {
+  parseColorString,
+  parseNumberString,
+  parseTextString
+} from '../../parser/regex';
 import type {
   AnnotationSettings,
   MarkerStyle,
@@ -36,6 +40,7 @@ export const parsePointStyle = (
     data,
     maxZoom: setting.maxzoom,
     minZoom: setting.minzoom,
+    widthFollowZoom: setting.widthFollowZoom,
     style
   };
 };
@@ -57,6 +62,7 @@ export const parseMarkerStyle = (
     data,
     maxZoom: setting.maxzoom,
     minZoom: setting.minzoom,
+    widthFollowZoom: setting.widthFollowZoom,
     style
   };
 };
@@ -68,11 +74,12 @@ export const parseTextStyle = (
   getPoints: (trajectory: Trajectory) => Trajectorypoint[]
 ): TrajectoryTextGroupProps => {
   const textStyles = setting.styles as TextStyle;
+  const parsedText = parseTextString(textStyles.text || '');
   const style: TextStyleMappingFunction = {
     color: parseColorString(textStyles.color || '#333333'),
     opacity: parseNumberString(textStyles.opacity || 1),
-    font_size: parseNumberString(textStyles.font_size || 12),
-    text: { type: 'static', value: textStyles.text || '' },
+    font_size: parseNumberString(textStyles.font_size ?? 12),
+    text: parsedText,
     follow: textStyles.follow || false,
     transform: textStyles.transform || ''
   };

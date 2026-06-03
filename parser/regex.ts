@@ -38,6 +38,10 @@ export type TrajectoryColorAccessor = (
 ) => d3.RGBColor;
 export type PointNumericAccessor = (point: Trajectorypoint) => number;
 export type TrajectoryNumericAccessor = (trajectory: Trajectory) => number;
+export type TextAccessor = (
+  point: Trajectorypoint,
+  trajectory: Trajectory
+) => string;
 
 export type ParsedColorMapping =
   | { type: 'static'; value: string }
@@ -111,6 +115,87 @@ const getByPath = (source: unknown, path: string) => {
   }, source);
 };
 
+const formatTextValue = (value: unknown) => {
+  if (value === null || value === undefined) {
+    return '';
+  }
+  if (typeof value === 'number') {
+    if (!Number.isFinite(value)) {
+      return '';
+    }
+    return String(Math.round(value * 1000) / 1000);
+  }
+  return String(value);
+};
+
+const resolvePointAttribute = (point: Trajectorypoint, path: string): unknown => {
+  const trimmedPath = path.trim();
+
+  if (trimmedPath === 'id') return point.id;
+  if (trimmedPath === 'time') return point.basePoint.time;
+  if (trimmedPath === 'lng') return point.basePoint.position.lng;
+  if (trimmedPath === 'lat') return point.basePoint.position.lat;
+
+  if (trimmedPath.startsWith('basePoint.')) {
+    return getByPath(point.basePoint, trimmedPath.substring('basePoint.'.length));
+  }
+  if (trimmedPath.startsWith('position.')) {
+    return getByPath(
+      point.basePoint.position,
+      trimmedPath.substring('position.'.length)
+    );
+  }
+  if (trimmedPath.startsWith('source.')) {
+    return getByPath(
+      point.attributes.source,
+      trimmedPath.substring('source.'.length)
+    );
+  }
+  if (trimmedPath.startsWith('computed.')) {
+    return getByPath(
+      point.attributes.computed,
+      trimmedPath.substring('computed.'.length)
+    );
+  }
+  if (trimmedPath.startsWith('others.')) {
+    return getByPath(
+      point.attributes.others,
+      trimmedPath.substring('others.'.length)
+    );
+  }
+
+  return (
+    getByPath(point.attributes.others, trimmedPath) ??
+    getByPath(point.attributes.computed, trimmedPath) ??
+    getByPath(point.attributes.source, trimmedPath) ??
+    getByPath(point.basePoint, trimmedPath)
+  );
+};
+
+const resolveTrajectoryAttribute = (
+  trajectory: Trajectory,
+  path: string
+): unknown => {
+  const trimmedPath = path.trim();
+
+  if (trimmedPath === 'id') return trajectory.id;
+  if (trimmedPath === 'starttime') return trajectory.starttime;
+  if (trimmedPath === 'endtime') return trajectory.endtime;
+  if (trimmedPath === 'distance') return trajectory.distance;
+
+  if (trimmedPath.startsWith('attributes.')) {
+    return getByPath(
+      trajectory.attributes,
+      trimmedPath.substring('attributes.'.length)
+    );
+  }
+
+  return (
+    getByPath(trajectory.attributes, trimmedPath) ??
+    getByPath(trajectory, trimmedPath)
+  );
+};
+
 const toFiniteNumber = (value: unknown, context: string) => {
   const numericValue =
     typeof value === 'number' ? value : Number(value as string | number);
@@ -160,7 +245,8 @@ export const parseTAttribute = (str: string) => {
 
   if (trimmed.match(TRAJECTORY_ATTRIBUTE_REGEX)) {
     const path = trimmed.substring(3);
-    return (trajectory: Trajectory) => getByPath(trajectory.attributes, path);
+    return (trajectory: Trajectory) =>
+      resolveTrajectoryAttribute(trajectory, path);
   }
 
   if (trimmed.match(MAGIC_TRAJECTORY_FUNCTION_REGEX)) {
@@ -177,7 +263,7 @@ export const parsePAttribute = (str: string) => {
   }
 
   const path = trimmed.substring(3);
-  return (point: Trajectorypoint) => getByPath(point.attributes.others, path);
+  return (point: Trajectorypoint) => resolvePointAttribute(point, path);
 };
 
 export const parseAttributeEither = (str: string) => {
@@ -194,6 +280,53 @@ export const parseAttributeEither = (str: string) => {
   }
 
   return { type: 's', value: str };
+};
+
+export const parseTextString = (
+  value: string
+): { type: 'static'; value: string } | { type: 'dynamic'; value: TextAccessor } => {
+  const templateRegex = /\{\{(.*?)\}\}/g;
+  const matches = [...value.matchAll(templateRegex)];
+
+  if (matches.length > 0) {
+    const parsedSegments = matches.map((match) => ({
+      token: match[0],
+      parsed: parseAttributeEither(match[1].trim())
+    }));
+
+    return {
+      type: 'dynamic',
+      value: (point, trajectory) => {
+        let output = value;
+        parsedSegments.forEach((segment) => {
+          const replacement =
+            segment.parsed.type === 'p'
+              ? formatTextValue(segment.parsed.value(point))
+              : segment.parsed.type === 't'
+              ? formatTextValue(segment.parsed.value(trajectory))
+              : formatTextValue(segment.parsed.value);
+          output = output.replace(segment.token, replacement);
+        });
+        return output;
+      }
+    };
+  }
+
+  const parsed = parseAttributeEither(value.trim());
+  if (parsed.type === 'p') {
+    return {
+      type: 'dynamic',
+      value: (point) => formatTextValue(parsed.value(point))
+    };
+  }
+  if (parsed.type === 't') {
+    return {
+      type: 'dynamic',
+      value: (_, trajectory) => formatTextValue(parsed.value(trajectory))
+    };
+  }
+
+  return { type: 'static', value };
 };
 
 export const parseColor = (str: string) => {
