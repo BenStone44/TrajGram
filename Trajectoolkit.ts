@@ -43,6 +43,7 @@ export const DataNodeTypes = [
   'trajectorydata',
   'roadnetwork',
   'geojson',
+  'graph',
   'filter',
   'segmentation',
   'aggregation',

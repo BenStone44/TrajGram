@@ -3,7 +3,7 @@ import type { Feature, MultiPolygon, Polygon } from 'geojson';
 import type { Trajectory, Trajectorypoint } from '../interfaces/trajectory';
 import type { colorArray } from '../utils/utils_color';
 
-export type EncodingType = 'trajectory' | 'area';
+export type EncodingType = 'trajectory' | 'trajectories' | 'area' | 'graph';
 export type EncodingStyleKey = 'color' | 'width' | 'opacity';
 export type AnnotationType = 'markers' | 'points' | 'arrows' | 'text';
 export type MappingValueType = 'static' | 'gradient' | 'linear' | 'dynamic';
@@ -12,6 +12,25 @@ export interface EncodingStyleSettings {
   color?: string;
   width?: string | number;
   opacity?: string | number;
+}
+
+export interface GraphStyleSettings {
+  nodeColor?: string;
+  nodeRadius?: number;
+  nodeOpacity?: number;
+  linkColor?: string;
+  linkWidth?: number;
+  linkOpacity?: number;
+  labelColor?: string;
+  labelSize?: number;
+  labelField?: string;
+  showLabels?: boolean;
+}
+
+export interface GraphLayoutSettings {
+  edgeBundling?: boolean;
+  bundlingStrength?: number;
+  bundlingGridSize?: number;
 }
 
 export interface MarkerStyle {
@@ -56,11 +75,12 @@ export interface EncodingSettings {
   id: string;
   type: EncodingType;
   source: string;
-  styles: EncodingStyleSettings;
+  styles: EncodingStyleSettings | GraphStyleSettings;
   zIndex?: number;
   maxzoom?: number;
   minzoom?: number;
   capstyle?: 'round' | 'square';
+  layout?: GraphLayoutSettings;
   annotations: Record<string, AnnotationSettings>;
 }
 

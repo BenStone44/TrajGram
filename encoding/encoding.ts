@@ -1,6 +1,8 @@
 import type { Feature, FeatureCollection } from 'geojson';
+import type { GeoNetwork } from '../interfaces/network';
 import type { Trajectory } from '../interfaces/trajectory';
 import { AreaEncoding } from './area';
+import { GraphEncoding, resolveGraphLayout, resolveGraphStyle } from './graph';
 import { type TrajectoryGroup } from '../render/trajectory-group';
 import { Trajectoolkit } from '../Trajectoolkit';
 import { Annotation } from './annotation';
@@ -14,6 +16,7 @@ import type {
   AreaStyleMappingFunction,
   ColorFunction,
   EncodingSettings,
+  GraphStyleSettings,
   EncodingStyleKey,
   NumericFunction,
   StyleMappingFunction,
@@ -35,6 +38,7 @@ export class Encoding {
   public data: () => Promise<unknown>;
   public trajectoryGroup: TrajectoryGroup | null = null;
   public areaEncoding: AreaEncoding | null = null;
+  public graphEncoding: GraphEncoding | null = null;
   public annotations = new Map<string, Annotation>();
   public mappingFunction: StyleMappingFunction | null = null;
   public areaMappingFunction: AreaStyleMappingFunction | null = null;
@@ -50,7 +54,7 @@ export class Encoding {
     this.data = () => this.core.getDQSDatabyID(this.setting.source);
     if (props.type === 'area') {
       this.areaMappingFunction = createAreaEncodingStyleMapping(props);
-    } else {
+    } else if (props.type === 'trajectory' || props.type === 'trajectories') {
       this.mappingFunction = createEncodingStyleMapping(props);
     }
     this.core.getDQSbyID(this.setting.source)?.children.push(this);
@@ -79,12 +83,14 @@ export class Encoding {
   private clearRenderedArtifacts() {
     this.core.trajectoryRendering.groups.delete(this.id);
     this.areaEncoding?.clear();
+    this.graphEncoding?.clear();
     for (const annotation of this.annotations.values()) {
       annotation.clear();
     }
     this.annotations.clear();
     this.trajectoryGroup = null;
     this.areaEncoding = null;
+    this.graphEncoding = null;
   }
 
   public clear() {
@@ -104,6 +110,17 @@ export class Encoding {
         this.core
       );
       this.areaEncoding.update(this.cachedData as FeatureCollection | Feature | null);
+      return;
+    }
+
+    if (this.setting.type === 'graph') {
+      this.graphEncoding = new GraphEncoding(
+        this.setting,
+        resolveGraphStyle(this.setting.styles as GraphStyleSettings),
+        resolveGraphLayout(this.setting.layout),
+        this.core
+      );
+      this.graphEncoding.update(this.cachedData as GeoNetwork | null);
       return;
     }
 

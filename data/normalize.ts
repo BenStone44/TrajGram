@@ -5,12 +5,14 @@ import type {
   MultiLineString
 } from 'geojson';
 import { calculateDistance } from '../utils/utils_calculation';
+import type { GeoNetwork } from '../interfaces/network';
 import type { RoadNetworkItem } from '../interfaces/road-network';
 import type {
   Trajectory,
   Trajectorypoint
 } from '../interfaces/trajectory';
 import { enrichTrajectoryComputedValues } from './computed';
+import { normalizeGraphData } from './normalizers/graph';
 import { NormalizationReportBuilder } from './report';
 import { normalizeTrajectoryData } from './normalizers/trajectory';
 import type {
@@ -40,6 +42,8 @@ const countPoints = (trajectories: Trajectory[]) =>
 
 const countRoadPoints = (roads: RoadNetworkItem[]) =>
   roads.reduce((sum, road) => sum + road.shapingPoints.length, 0);
+
+const countGraphEdges = (graph: GeoNetwork) => graph.edges.length;
 
 const extractFeatureProperties = (value: unknown) =>
   isFeature(value) && isRecord(value.properties)
@@ -226,6 +230,15 @@ export const normalizeDataWithReport = (
   if (type === 'geojson') {
     const geojson = normalizeGeoJSONData(data, report);
     return { data: geojson, report: report.build() };
+  }
+
+  if (type === 'graph') {
+    const graph = normalizeGraphData(data, report);
+    if (!graph) {
+      return { data: null, report: report.build() };
+    }
+    report.setGraphCounts(graph.nodes.length, countGraphEdges(graph));
+    return { data: graph, report: report.build() };
   }
 
   report.setDetectedShape('unrecognized');

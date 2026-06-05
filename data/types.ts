@@ -1,14 +1,16 @@
 import type { Feature, FeatureCollection } from 'geojson';
+import type { GeoNetwork } from '../interfaces/network';
 import type { RoadNetworkItem } from '../interfaces/road-network';
 import type { Trajectory } from '../interfaces/trajectory';
 
-export type DataType = 'trajectory' | 'roadnetwork' | 'geojson';
+export type DataType = 'trajectory' | 'roadnetwork' | 'geojson' | 'graph';
 
 export type NormalizationConfidence = 'high' | 'medium' | 'low';
 
 export type StandardDataFormat =
   | Trajectory[]
   | RoadNetworkItem[]
+  | GeoNetwork
   | FeatureCollection
   | Feature;
 
@@ -31,6 +33,8 @@ export interface NormalizationReport {
   trace: NormalizationTrace[];
   trajectoryCount?: number;
   pointCount?: number;
+  nodeCount?: number;
+  edgeCount?: number;
 }
 
 export interface NormalizationResult<T = StandardDataFormat | null> {

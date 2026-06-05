@@ -48,6 +48,11 @@ export class NormalizationReportBuilder {
     this.report.pointCount = pointCount;
   }
 
+  public setGraphCounts(nodeCount: number, edgeCount: number) {
+    this.report.nodeCount = nodeCount;
+    this.report.edgeCount = edgeCount;
+  }
+
   public mergeTrace(traces: NormalizationTrace[]) {
     this.report.trace.push(...traces);
   }
