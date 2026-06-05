@@ -31,6 +31,8 @@ export interface GraphLayoutSettings {
   edgeBundling?: boolean;
   bundlingStrength?: number;
   bundlingGridSize?: number;
+  smoothness?: number;
+  renderMode?: 'svg' | 'webgl';
 }
 
 export interface MarkerStyle {

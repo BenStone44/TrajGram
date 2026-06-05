@@ -21,6 +21,8 @@ export type GraphResolvedLayout = {
   edgeBundling: boolean;
   bundlingStrength: number;
   bundlingGridSize: number;
+  smoothness: number;
+  renderMode: 'svg' | 'webgl';
 };
 
 const toColor = (value: unknown, fallback: string) => {
@@ -57,5 +59,7 @@ export const resolveGraphLayout = (
 ): GraphResolvedLayout => ({
   edgeBundling: layout?.edgeBundling ?? false,
   bundlingStrength: Math.max(0, Math.min(1, toNumber(layout?.bundlingStrength, 0.35))),
-  bundlingGridSize: Math.max(200, toNumber(layout?.bundlingGridSize, 1800))
+  bundlingGridSize: Math.max(200, toNumber(layout?.bundlingGridSize, 1800)),
+  smoothness: Math.max(0, Math.min(1, toNumber(layout?.smoothness, 0.45))),
+  renderMode: layout?.renderMode === 'webgl' ? 'webgl' : 'svg'
 });

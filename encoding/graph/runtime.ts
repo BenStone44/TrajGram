@@ -1,8 +1,13 @@
 import { LngLat } from 'mapbox-gl';
 import * as d3 from 'd3';
 import type { GeoEdge, GeoNetwork, GeoNode } from '../../interfaces/network';
+import type { Trajectory, Trajectorypoint } from '../../interfaces/trajectory';
 import type { Trajectoolkit } from '../../Trajectoolkit';
-import type { EncodingSettings } from '../types';
+import type {
+  EncodingSettings,
+  PointStyleMappingFunction,
+  StyleMappingFunction
+} from '../types';
 import type { GraphResolvedLayout, GraphResolvedStyle } from './style';
 
 type Point = {
@@ -195,6 +200,18 @@ const smoothPolyline = (points: Point[], passes = 1) => {
   return current;
 };
 
+const densifyPolyline = (points: Point[], factor: number) => {
+  if (points.length <= 2 || factor <= 1) {
+    return points.map((point) => ({ ...point }));
+  }
+
+  const subdivisionPoints = Math.max(
+    points.length - 2,
+    Math.round((points.length - 1) * factor)
+  );
+  return resamplePolyline(points, subdivisionPoints);
+};
+
 const angleCompatibility = (edgeA: WorldEdge, edgeB: WorldEdge) => {
   const aVector = subtract(edgeA.target.world, edgeA.source.world);
   const bVector = subtract(edgeB.target.world, edgeB.source.world);
@@ -258,6 +275,8 @@ export class GraphEncoding {
   private cachedData: GeoNetwork | null = null;
   private bundledEdges: BundledEdge[] = [];
   private root: d3.Selection<SVGGElement, unknown, null, undefined> | null = null;
+  private graphTrajectoryGroupId: string;
+  private graphPointGroupId: string;
   private readonly onMapChange: () => void;
 
   constructor(
@@ -270,6 +289,8 @@ export class GraphEncoding {
     this.style = style;
     this.layout = layout;
     this.core = core;
+    this.graphTrajectoryGroupId = `${this.setting.id}__graph_edges`;
+    this.graphPointGroupId = `${this.setting.id}__graph_nodes`;
     this.onMapChange = () => this.draw();
   }
 
@@ -278,18 +299,31 @@ export class GraphEncoding {
     this.bundledEdges = this.layout.edgeBundling
       ? this.computeBundledEdges(data)
       : this.computeStraightEdges(data);
-    this.bindMapEvents();
+    if (this.layout.renderMode === 'svg') {
+      this.bindMapEvents();
+    } else {
+      this.unbindMapEvents();
+    }
     this.draw();
   }
 
   public draw() {
-    if (!this.core.map || !this.core.SVG) {
+    if (!this.core.map) {
       throw new Error('map not initialized!');
     }
 
-    this.clearRoot();
+    this.clearRenderedLayers();
     if (!this.cachedData || this.cachedData.nodes.length === 0) {
       return;
+    }
+
+    if (this.layout.renderMode === 'webgl') {
+      this.drawWebgl();
+      return;
+    }
+
+    if (!this.core.SVG) {
+      throw new Error('svg not initialized!');
     }
 
     const svg = d3.select(this.core.SVG);
@@ -351,12 +385,22 @@ export class GraphEncoding {
 
   public clear() {
     this.unbindMapEvents();
-    this.clearRoot();
+    this.clearRenderedLayers();
   }
 
   private clearRoot() {
     this.root?.remove();
     this.root = null;
+  }
+
+  private clearWebglGroups() {
+    this.core.trajectoryRendering.groups.delete(this.graphTrajectoryGroupId);
+    this.core.pointRendering.groups.delete(this.graphPointGroupId);
+  }
+
+  private clearRenderedLayers() {
+    this.clearRoot();
+    this.clearWebglGroups();
   }
 
   private bindMapEvents() {
@@ -418,6 +462,136 @@ export class GraphEncoding {
         } satisfies WorldEdge;
       })
       .filter((edge): edge is WorldEdge => edge !== null);
+  }
+
+  private drawWebgl() {
+    if (!this.cachedData) {
+      return;
+    }
+
+    const trajectories = this.toTrajectories(this.bundledEdges);
+    const points = this.toPoints(this.cachedData.nodes);
+
+    if (trajectories.length > 0) {
+      this.core.addTrajectoryGroup({
+        id: this.graphTrajectoryGroupId,
+        data: trajectories,
+        zIndex: this.setting.zIndex,
+        maxZoom: this.setting.maxzoom,
+        minZoom: this.setting.minzoom,
+        capStyle: this.setting.capstyle ?? 'round',
+        style: this.createEdgeStyle()
+      });
+    }
+
+    if (points.length > 0) {
+      this.core.addPointGroup({
+        id: this.graphPointGroupId,
+        data: () => points,
+        zIndex: (this.setting.zIndex ?? 0) + 1,
+        maxZoom: this.setting.maxzoom,
+        minZoom: this.setting.minzoom,
+        style: this.createNodeStyle()
+      });
+    }
+  }
+
+  private createEdgeStyle(): StyleMappingFunction {
+    return {
+      color: {
+        type: 'static',
+        value: this.style.linkColor
+      },
+      width: {
+        type: 'static',
+        value: this.style.linkWidth
+      },
+      opacity: {
+        type: 'static',
+        value: this.style.linkOpacity
+      }
+    };
+  }
+
+  private createNodeStyle(): PointStyleMappingFunction {
+    return {
+      color: {
+        type: 'static',
+        value: this.style.nodeColor
+      },
+      r: {
+        type: 'static',
+        value: this.style.nodeRadius
+      },
+      opacity: {
+        type: 'static',
+        value: this.style.nodeOpacity
+      }
+    };
+  }
+
+  private toTrajectories(edges: BundledEdge[]): Trajectory[] {
+    return edges
+      .filter((edge) => edge.points.length >= 2)
+      .map((edge) => {
+        const shapingPoints = edge.points.map((point, index) =>
+          this.createTrajectoryPoint(
+            `${edge.id}-p-${index}`,
+            toLngLat(point),
+            {
+              source: {
+                tid: edge.id
+              },
+              others: {
+                ...edge.attributes,
+                sourceNodeId: edge.source.id,
+                targetNodeId: edge.target.id,
+                kind: 'graph-edge-point'
+              }
+            }
+          )
+        );
+
+        return {
+          id: edge.id,
+          starttime: '',
+          endtime: '',
+          distance: polylineLength(edge.points),
+          shapingPoints,
+          attributes: {
+            ...edge.attributes,
+            sourceNodeId: edge.source.id,
+            targetNodeId: edge.target.id,
+            kind: 'graph-edge'
+          }
+        } satisfies Trajectory;
+      });
+  }
+
+  private toPoints(nodes: GeoNode[]): Trajectorypoint[] {
+    return nodes.map((node, index) =>
+      this.createTrajectoryPoint(`${this.setting.id}-node-${index}`, node.position, {
+        others: {
+          ...node.attributes,
+          nodeId: node.id,
+          kind: 'graph-node'
+        }
+      })
+    );
+  }
+
+  private createTrajectoryPoint(
+    id: string,
+    position: LngLat,
+    attributes: Trajectorypoint['attributes']
+  ): Trajectorypoint {
+    return {
+      id,
+      basePoint: {
+        position
+      },
+      attributes
+    };
   }
 
   private computeStraightEdges(data: GeoNetwork | null) {
@@ -519,9 +693,15 @@ export class GraphEncoding {
       }
     }
 
+    const smoothPasses = Math.max(0, Math.round(this.layout.smoothness * 8));
+    const densifyFactor = 1 + this.layout.smoothness * 5;
+
     return worldEdges.map((edge, index) => ({
       id: edge.id,
-      points: smoothPolyline(pointsByEdge[index], 2),
+      points: smoothPolyline(
+        densifyPolyline(pointsByEdge[index], densifyFactor),
+        smoothPasses
+      ),
       source: edge.source,
       target: edge.target,
       attributes: edge.attributes
